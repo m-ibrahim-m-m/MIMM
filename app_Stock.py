@@ -131,7 +131,7 @@ y_train, y_test = y[:train_size], y[train_size:]
 predicted_stock_price = model.predict(X_test)
 
 st.subheader('Model Perdiction Error')
-rmse = np.sqrt(mean_squared_error(y_test, predicted_stock_price))
+rmse = np.sqrt(mean_squared_error(predicted_stock_price,y_test))
 st.write(f'Root Mean Squared Error percentage for the Perdiction Model is {rmse* 100:.2f}%')
 
 # Inverse transform the predictions and actual values to get original scale
