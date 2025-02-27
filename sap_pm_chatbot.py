@@ -89,7 +89,7 @@ def main():
     st.sidebar.write("- How do I schedule a maintenance plan?")
     st.sidebar.write("- How do I report a breakdown?")
     st.sidebar.write("- How do I view notifications?")
-    st.sidebar.write("Type your query in the box below and press Enter.")
+    st.sidebar.write("select exact quary from the above options or type your quary ended with in SAP and press Enter.")
 
     # Initialize session state to store chat history
     if "chat_history" not in st.session_state:
