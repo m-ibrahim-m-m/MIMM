@@ -1,4 +1,4 @@
-!pip install transformer
+pip install transformer
 import streamlit as st
 from transformers import AutoTokenizer, AutoModel, pipeline
 import torch
