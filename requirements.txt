@@ -1,0 +1,5 @@
+streamlit==1.26.0
+transformers==4.30.0
+torch==2.0.1
+scikit-learn==1.2.2
+spacy==3.5.3
