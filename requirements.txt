@@ -1,6 +1,5 @@
 streamlit==1.26.0
 transformers==4.30.0
-torch==2.0.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+torch==2.2.2
 scikit-learn==1.2.2
 spacy==3.5.3
-https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.5.0/en_core_web_sm-3.5.0-py3-none-any.whl
