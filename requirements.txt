@@ -3,3 +3,4 @@ transformers==4.30.0
 torch==2.2.2
 scikit-learn==1.2.2
 spacy==3.5.3
+numpy
