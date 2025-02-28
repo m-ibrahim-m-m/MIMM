@@ -1,6 +1,6 @@
 import streamlit as st
 from transformers import pipeline
-generator = pipeline("text-generation", model="distilgpt2")
+from transformers import AutoTokenizer, AutoModel, pipeline
 import torch
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
