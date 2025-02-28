@@ -79,7 +79,7 @@ def get_response(user_input):
 # Streamlit app
 def main():
     st.title("SAP Plant Maintenance Chatbot")
-    st.write("Welcome to the SAP Plant Maintenance Support Chatbot! How can I assist you today?")
+    st.write("Welcome to the SAP Plant Maintenance Support Chatbot! How can I assist you today(Please select one of suppurt options or press the hyper link to use your words in google search ?")
 
     # Display support options or hints
     st.sidebar.title("Support Options")
