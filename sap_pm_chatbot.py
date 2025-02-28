@@ -1,7 +1,6 @@
-pip install --upgrade pip
 import streamlit as st
-import transformers
-from transformers import AutoTokenizer, AutoModel, pipeline
+from transformers import pipeline
+generator = pipeline("text-generation", model="distilgpt2")
 import torch
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
