@@ -1,5 +1,4 @@
 import streamlit as st
-from transformers import pipeline
 from transformers import AutoTokenizer, AutoModel, pipeline
 import torch
 import numpy as np
