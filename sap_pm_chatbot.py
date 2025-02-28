@@ -64,7 +64,7 @@ def get_response(user_input):
 
     # Find the most similar response
     best_match = max(similarities, key=similarities.get)
-    if similarities[best_match] > 0.99:  # Threshold for similarity
+    if similarities[best_match] > 1:  # Threshold for similarity
         return responses[best_match]
     else:
         # Refine the query using advanced NLP
