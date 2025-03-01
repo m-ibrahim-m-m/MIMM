@@ -1,90 +1,119 @@
 import streamlit as st
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer, AutoModel, pipeline
 import torch
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import urllib.parse
-from nltk.corpus import stopwords  # Replace spaCy with NLTK for lighter keyword extraction
+import spacy
 
-# Force CPU usage and disable gradients
-torch.set_grad_enabled(False)
-torch.set_default_tensor_type(torch.FloatTensor)
-
-# Load lightweight models
+# Load the transformer model and tokenizer
 @st.cache_resource
-def load_models():
-    # Load DistilBERT (smaller than BERT)
+def load_model():
     model_name = "distilbert-base-uncased"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModel.from_pretrained(model_name)
-    
-    # Load NLTK stopwords (lighter than spaCy)
-    import nltk
-    nltk.download("stopwords")
-    return tokenizer, model, stopwords.words("english")
+    return tokenizer, model
 
-tokenizer, model, STOPWORDS = load_models()
+tokenizer, model = load_model()
 
-# Precompute embeddings for predefined responses (saves runtime resources)
-@st.cache_data
-def precompute_embeddings():
-    embeddings = {}
-    for key in responses:
-        inputs = tokenizer(key, return_tensors="pt", truncation=True, padding=True)
-        outputs = model(**inputs)
-        embedding = outputs.last_hidden_state[:, 0, :].squeeze().numpy()
-        embeddings[key] = embedding
-    return embeddings
+# Load spaCy for keyword extraction
+nlp = spacy.load("en_core_web_sm")
 
-response_embeddings = precompute_embeddings()
+# Load a paraphrasing model
+paraphrase_pipeline = pipeline("text2text-generation", model="t5-small")
 
-# Predefined responses (unchanged)
+# Predefined responses for SAP Plant Maintenance
 responses = {
-    "How do I create a maintenance order?": "To create a maintenance order...",
-    # ... (other responses)
-    "default": "I'm sorry, I don't understand..."
+    "How do I create a maintenance order?": "To create a maintenance order, go to transaction code 'IW31' in SAP. Fill in the required details such as equipment, description, planner group, activity type and priority, then save the order.",
+    "How do I check equipment history?": "To check equipment history, use transaction code 'IE03'. Enter the equipment number and navigate to the 'History' tab.",
+    "How do I schedule a maintenance plan?": "To schedule a maintenance plan, use transaction code 'IP10'. Enter the maintenance plan number and set the scheduling parameters.",
+    "How do I report a breakdown?": "To report a breakdown, use transaction code 'IW51'. Enter the details of the breakdown, including the equipment and fault description.",
+    "How do I view notifications?": "To view notifications, use transaction code 'IW29'. You can filter notifications by status, equipment, or date.",
+    "default": "I'm sorry, I don't understand your query. Please try searching the SAP Help Portal for more information."
 }
 
-# Simplified keyword extraction (no spaCy)
+# Function to generate embeddings
+def get_embedding(text):
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
+    with torch.no_grad():
+        outputs = model(**inputs)
+    return outputs.last_hidden_state[:, 0, :].squeeze().numpy()
+
+# Function to extract keywords using spaCy
 def extract_keywords(text):
-    words = text.lower().split()
-    return " ".join([w for w in words if w not in STOPWORDS])
+    doc = nlp(text)
+    keywords = [token.text for token in doc if token.is_alpha and not token.is_stop]
+    return " ".join(keywords)
 
-# Lightweight paraphrasing (removed T5; use simpler logic)
+# Function to paraphrase the query using T5
 def paraphrase_query(text):
-    return text.replace("how", "what is the process to").replace("do I", "can one")
+    paraphrased = paraphrase_pipeline(f"paraphrase: {text}", max_length=50, num_return_sequences=1)
+    return paraphrased[0]["generated_text"]
 
-# Optimized response generation
+# Function to get the chatbot's response
 def get_response(user_input):
     user_input = user_input.lower()
-    
-    # Compute user embedding
-    inputs = tokenizer(user_input, return_tensors="pt", truncation=True, padding=True)
-    outputs = model(**inputs)
-    user_embedding = outputs.last_hidden_state[:, 0, :].squeeze().numpy()
+    user_embedding = get_embedding(user_input)
 
-    # Compare with precomputed embeddings
-    similarities = {
-        key: cosine_similarity([user_embedding], [emb])[0][0]
-        for key, emb in response_embeddings.items()
-    }
-    
+    # Calculate similarity scores between user input and predefined responses
+    similarities = {}
+    for key, response in responses.items():
+        response_embedding = get_embedding(key)
+        similarity = cosine_similarity([user_embedding], [response_embedding])[0][0]
+        similarities[key] = similarity
+
+    # Find the most similar response
     best_match = max(similarities, key=similarities.get)
-    if similarities[best_match] > 0.95:  # Lowered threshold
+    if similarities[best_match] > 0.95:  # Threshold for similarity
         return responses[best_match]
     else:
+        # Refine the query using advanced NLP
         keywords = extract_keywords(user_input)
-        paraphrased = paraphrase_query(user_input)
-        search_url = f"https://www.google.com/search?q={urllib.parse.quote(keywords + ' ' + paraphrased)}"
-        return f"Try searching SAP Community: [Google]({search_url})"
+        paraphrased_query = paraphrase_query(user_input)
+        refined_query = f"{keywords} {paraphrased_query}"
 
-# Streamlit app (unchanged UI)
+        # Redirect to SAP Help Portal with the refined query
+        search_url = f"https://www.google.com/search?q={urllib.parse.quote(refined_query)}"
+        return f"I couldn't find a specific answer. Please check the google for more information: [or try SAP Community]({search_url})"
+
+# Streamlit app
 def main():
     st.title("SAP Plant Maintenance Chatbot")
-    st.write("Welcome! How can I assist you today?")
-    
-    # Sidebar and chat logic...
-    # (Same as your original code)
+    st.write("Welcome to the SAP Plant Maintenance Support Chatbot! How can I assist you today?")
+
+    # Display support options or hints
+    st.sidebar.title("Support Options")
+    st.sidebar.write("Here are some common queries you can ask:")
+    st.sidebar.write("- How do I create a maintenance order?")
+    st.sidebar.write("- How do I check equipment history?")
+    st.sidebar.write("- How do I schedule a maintenance plan?")
+    st.sidebar.write("- How do I report a breakdown?")
+    st.sidebar.write("- How do I view notifications?")
+    st.sidebar.write("select exact query from the above options or type your query ended with in SAP and press Enter.")
+
+    # Initialize session state to store chat history
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
+    # User input
+    user_input = st.text_input("You: ", key="user_input")
+
+    # Chatbot response
+    if user_input:
+        response = get_response(user_input)
+        st.session_state.chat_history.append(f"You: {user_input}")
+        st.session_state.chat_history.append(f"Chatbot: {response}")
+
+    # Display chat history
+    st.write("### Chat History")
+    for message in st.session_state.chat_history:
+        st.write(message)
+
+    # Clear chat history button
+    if st.button("Clear Chat History"):
+        # Reset the chat history
+        st.session_state.chat_history = []
+        st.rerun()  # Force a rerun to update the UI immediately
 
 if __name__ == "__main__":
     main()
