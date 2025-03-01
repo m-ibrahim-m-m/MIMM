@@ -76,7 +76,7 @@ def get_response(user_input):
 
     # Find the most similar response
     best_match = max(similarities, key=similarities.get)
-    if similarities[best_match] > 0.99:  # Threshold for similarity
+    if similarities[best_match] > 0.95:  # Threshold for similarity
         return responses[best_match]
     else:
         # Refine the query using advanced NLP
@@ -86,7 +86,7 @@ def get_response(user_input):
 
         # Redirect to SAP Help Portal with the refined query
         search_url = f"https://www.google.com/search?q={urllib.parse.quote(refined_query)}"
-        return f"I couldn't find a specific answer. Please check the google for more information: [google or try SAP Community]({search_url})"
+        return f"I couldn't find a specific answer. Please check google for more information: [google or try SAP Community]({search_url})"
 
 # Streamlit app
 def main():
