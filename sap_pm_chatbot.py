@@ -39,7 +39,7 @@ responses = {
     "How do I create a maintenance order?": "To create a maintenance order, go to transaction code 'IW31' in SAP. Fill in the required details such as equipment, description, planner group, activity type and priority, then save the order.",
     "How do I check equipment history?": "To check equipment history, use transaction code 'IE03'. Enter the equipment number and navigate to the 'History' tab.",
     "How do I schedule a maintenance plan?": "To schedule a maintenance plan, use transaction code 'IP10'. Enter the maintenance plan number and set the scheduling parameters.",
-    "How do I report a breakdown?": "To report a breakdown, use transaction code 'IW51'. Enter the details of the breakdown, including the equipment and fault description.",
+    "How do I report a breakdown?": "To report a breakdown, use transaction code 'IW22'. Enter the details of the breakdown in the malfunction Tab inside the notification, including the equipment and fault description.",
     "How do I view notifications?": "To view notifications, use transaction code 'IW29'. You can filter notifications by status, equipment, or date.",
     "default": "I'm sorry, I don't understand your query. Please try searching the SAP Help Portal for more information."
 }
