@@ -1,5 +1,5 @@
 # maintenance_dashboard.py
-python -c "import plotly; print(plotly.__version__)"
+!pip install plotly
 import pandas as pd
 import streamlit as st
 import plotly.express as px
