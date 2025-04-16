@@ -7,9 +7,8 @@ streamlit==1.32.0
 transformers==4.36.0
 nltk==3.8.1
 spacy==3.7.0
-streamlit
-pandas
-plotly
-numpy
-openpyxl (for Excel file handling)
-xlrd (for legacy Excel format support)
+plotly>=5.18.0
+pandas>=2.0.3
+numpy>=1.24.3
+openpyxl>=3.1.2  # For Excel file handling
+xlrd>=2.0.1      # For legacy Excel format support
