@@ -1,10 +1,6 @@
---upgrade
-streamlit==1.32.0
+streamlit==1.32.2
 plotly==5.18.0
-...
-streamlit>=1.32.0
-plotly>=5.18.0
-pandas>=2.0.3
-numpy>=1.24.3
-openpyxl>=3.1.2  # For Excel file handling
-xlrd>=2.0.1      # For legacy Excel format support
+pandas==2.2.1
+numpy==1.26.4
+openpyxl==3.1.2
+xlrd==2.0.1
