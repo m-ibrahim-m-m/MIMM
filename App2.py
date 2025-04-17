@@ -357,7 +357,7 @@ def plot_status_trends(filtered_data):
     )
 
     fig2.update_layout(
-        hovermode="x unified",
+        hovermode="Month",
         xaxis_title="Plan Type",
         yaxis_title="Number of Orders"
     )
