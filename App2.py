@@ -352,11 +352,6 @@ def plot_status_trends(filtered_data):
        category_orders={"Month": month_order},
        hover_data=['Month', 'Plan Type', 'Order Status'])
 
-    fig2.update_layout(
-            hovermode="x unified",
-            xaxis_title="Plan Type",
-            yaxis_title="Number of Orders"
-        )
     st.plotly_chart(fig2, use_container_width=True)
 
 
