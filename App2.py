@@ -363,27 +363,6 @@ def plot_status_trends(filtered_data):
     )
     st.plotly_chart(fig2, use_container_width=True)
 
- # Create temporal aggregation
-    trend_data3 = filtered_data.groupby(
-        ['Year', 'Month', 'Order Status', 'Plan Type']
-        ).size().reset_index(name='Count2')
-    fig3 = px.line(
-        trend_data3,
-        x='Month',
-        y='Count2',
-        color='Order Status',
-        facet_col='Year',
-        markers=True,
-       category_orders={
-            "Plan Type": month_order
-        }
-    )
-    fig2.update_layout(
-        hovermode="x unified",
-        xaxis_title="Plan Type",
-        yaxis_title="Number of Orders"
-    )
-    st.plotly_chart(fig3, use_container_width=True)
 
 def plot_order_type_analysis(filtered_data):
     """Visualize order type analysis"""
