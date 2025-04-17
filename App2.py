@@ -352,8 +352,7 @@ def plot_status_trends(filtered_data):
         facet_col='Year',
         markers=True,
        category_orders={
-            "Month": month_order,
-            "Plan Type": plan_type_order
+            "Month": month_order
         }
     )
     
