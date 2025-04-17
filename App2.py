@@ -372,7 +372,7 @@ fig2.update_xaxes(
     categoryarray=plan_type_order
 )
 
-    fig2.update_layout(
+fig2.update_layout(
         hovermode="x unified",
         xaxis_title="Plan Type",
         yaxis_title="Number of Orders"
