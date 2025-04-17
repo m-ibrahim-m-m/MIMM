@@ -356,7 +356,7 @@ def plot_status_trends(filtered_data):
     )
     
     # Ensure proper x-axis ordering
-    fig2.update_xaxes(type='category', categoryorder='array', categoryarray=month_order, hovertemplate=None)
+    fig2.update_xaxes(type='category', categoryorder='array', categoryarray=month_order)
     fig2.update_layout(hovermode="Month")
     st.plotly_chart(fig2, use_container_width=True)
     
