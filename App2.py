@@ -352,30 +352,27 @@ def plot_status_trends(filtered_data):
        category_orders={"Month": month_order},
        hover_data=['Month', 'Year', 'Plan Type', 'Order Status'])
     # Customize hover template
-fig2.update_traces(
-    hovertemplate="<br>".join([
+    fig2.update_traces(hovertemplate="<br>".join([
         "<b>Plan Type</b>: %{x}",
         "<b>Count</b>: %{y}",
         "<b>Order Status</b>: %{customdata[2]}",
         "<b>Month</b>: %{customdata[0]}",
-        "<b>Year</b>: %{customdata[1]}"
-    ])
-)
+        "<b>Year</b>: %{customdata[1]}"]))
 
-# Ensure proper ordering and layout
-plan_type_order = ['Planned', 'Unplanned']
-fig2.update_xaxes(
-    type='category',
-    categoryorder='array',
-    categoryarray=plan_type_order
-)
-
-fig2.update_layout(
-        hovermode="x unified",
-        xaxis_title="Plan Type",
-        yaxis_title="Number of Orders"
+    # Ensure proper ordering and layout
+    plan_type_order = ['Planned', 'Unplanned']
+    fig2.update_xaxes(
+        type='category',
+        categoryorder='array',
+        categoryarray=plan_type_order
     )
-st.plotly_chart(fig2, use_container_width=True)
+    
+    fig2.update_layout(
+            hovermode="x unified",
+            xaxis_title="Plan Type",
+            yaxis_title="Number of Orders"
+        )
+    st.plotly_chart(fig2, use_container_width=True)
 
 
 def plot_order_type_analysis(filtered_data):
