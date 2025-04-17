@@ -351,11 +351,8 @@ def plot_status_trends(filtered_data):
         color='Order Status',
         facet_col='Year',
         markers=True,
-       category_orders={
-            "Month": month_order
-        }
-       hover_data=['Month', 'Year', 'Plan Type', 'Order Status']  # Add month to hover
-    )
+       category_orders={"Month": month_order},
+       hover_data=['Month', 'Year', 'Plan Type', 'Order Status'])
     # Customize hover template
 fig2.update_traces(
     hovertemplate="<br>".join([
