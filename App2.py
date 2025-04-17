@@ -350,7 +350,7 @@ def plot_status_trends(filtered_data):
         facet_col='Year',
         markers=True,
        category_orders={"Month": month_order},
-       hover_data=['Month', 'Year', 'Plan Type', 'Order Status'])
+       hover_data=['Month', 'Plan Type', 'Order Status'])
 
     fig2.update_layout(
             hovermode="x unified",
