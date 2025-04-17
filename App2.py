@@ -274,9 +274,7 @@ def plot_order_status_distribution(filtered_data):
             yanchor="bottom",
             y=1.02,
             xanchor="right",
-            x=1
-        )
-    )
+            x=1 ))
     
     st.plotly_chart(fig, use_container_width=True)
 
