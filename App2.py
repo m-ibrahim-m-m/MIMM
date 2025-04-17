@@ -359,13 +359,13 @@ def plot_status_trends(filtered_data):
     #     "<b>Month</b>: %{customdata[0]}",
     #     "<b>Year</b>: %{customdata[1]}"]))
 
-    # Ensure proper ordering and layout
-    plan_type_order = ['Planned', 'Unplanned']
-    fig2.update_xaxes(
-        type='category',
-        categoryorder='array',
-        categoryarray=plan_type_order
-    )
+    # # Ensure proper ordering and layout
+    # plan_type_order = ['Planned', 'Unplanned']
+    # fig2.update_xaxes(
+    #     type='category',
+    #     categoryorder='array',
+    #     categoryarray=plan_type_order
+    # )
     
     fig2.update_layout(
             hovermode="x unified",
