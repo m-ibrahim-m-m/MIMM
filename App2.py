@@ -375,7 +375,7 @@ fig2.update_layout(
         xaxis_title="Plan Type",
         yaxis_title="Number of Orders"
     )
-    st.plotly_chart(fig2, use_container_width=True)
+st.plotly_chart(fig2, use_container_width=True)
 
 
 def plot_order_type_analysis(filtered_data):
