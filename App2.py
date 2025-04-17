@@ -351,13 +351,23 @@ def plot_status_trends(filtered_data):
         color='Order Status',
         facet_col='Year',
         markers=True,
-        title="planned vs unplanned Orders Status Trends",
-        category_orders={"Month": month_order}
+       category_orders={
+            "Month": month_order,
+            "Plan Type": plan_type_order
+        }
     )
     
-    # Ensure proper x-axis ordering
-    fig2.update_xaxes(type='category', categoryorder='array', categoryarray=month_order)
-    fig2.update_layout(hovermode="Month")
+    fig2.update_xaxes(
+        type='category',
+        categoryorder='array',
+        categoryarray=plan_type_order
+    )
+    
+    fig2.update_layout(
+        hovermode="x unified",
+        xaxis_title="Plan Type",
+        yaxis_title="Number of Orders"
+    )
     st.plotly_chart(fig2, use_container_width=True)
     
     
