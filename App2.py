@@ -349,7 +349,7 @@ def plot_status_trends(filtered_data):
         x='Plan Type',
         y='Count1',
         color='Order Status',
-        facet_col=['Year','Month',
+        facet_col=['Year','Month'],
         markers=True,
        category_orders={
             "Month": month_order
