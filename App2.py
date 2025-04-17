@@ -366,16 +366,16 @@ def plot_status_trends(filtered_data):
  # Create temporal aggregation
     trend_data3 = filtered_data.groupby(
         ['Year', 'Month', 'Order Status', 'Plan Type']
-        ).size().reset_index(name='Count1')
+        ).size().reset_index(name='Count2')
     fig3 = px.line(
         trend_data3,
-        x='Plan Type',
-        y='Month',
+        x='Month',
+        y='Count2',
         color='Order Status',
         facet_col='Year',
         markers=True,
        category_orders={
-            "Month": month_order
+            "Plan Type": month_order
         }
     )
     fig2.update_layout(
