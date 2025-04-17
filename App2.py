@@ -355,13 +355,7 @@ def plot_status_trends(filtered_data):
             "Month": month_order
         }
     )
-    
-    fig2.update_xaxes(
-        type='category',
-        categoryorder='array',
-        categoryarray=plan_type_order
-    )
-    
+
     fig2.update_layout(
         hovermode="x unified",
         xaxis_title="Plan Type",
