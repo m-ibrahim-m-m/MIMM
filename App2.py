@@ -218,7 +218,7 @@ def display_kpis(filtered_data):
                 values=values,
                 title="Overall Orders Completion",
                 hole=0.3,
-                color_discrete_sequence=px.colors.qualitative.Pastel1
+                color_discrete_sequence=px.colors.qualitative.Plotly
             )
             fig.update_traces(
                 textinfo='percent+label',
