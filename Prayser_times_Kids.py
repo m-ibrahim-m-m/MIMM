@@ -59,8 +59,8 @@ def fetch_prayer_times(city="Cairo", country="Egypt"):
 
 # --- User input for location ---
 st.sidebar.title("📍 Location Settings")
-city = st.sidebar.text_input("City", "New York")
-country = st.sidebar.text_input("Country", "USA")
+city = st.sidebar.text_input("City", "Cairo")
+country = st.sidebar.text_input("Country", "Egypt")
 if st.sidebar.button("Update Prayer Times"):
     st.session_state['prayer_times'] = fetch_prayer_times(city, country)
 
