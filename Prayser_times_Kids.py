@@ -2,15 +2,16 @@ import streamlit as st
 import datetime
 import json
 import os
+import requests
 
-# Set page config for a kid-friendly theme
+# --- Page config for kid-friendly theme ---
 st.set_page_config(
     page_title="Kids' Prayer Times",
     page_icon="🌙",
     layout="centered"
 )
 
-# Custom CSS
+# --- Custom CSS for style ---
 st.markdown("""
     <style>
     .big-font { font-size: 24px !important; color: #FF6B6B; }
@@ -18,16 +19,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Sample prayer times
-prayer_times = {
-    "Fajr": "4:00 AM",
-    "Dhuhr": "11:55 AM",
-    "Asr": "3:30 PM",
-    "Maghrib": "6:20 PM",
-    "Isha": "7:30 PM"
-}
-
-# Emoji/icons
+# --- Emoji/icons for prayers ---
 prayer_emojis = {
     "Fajr": "🌙",
     "Dhuhr": "🌞",
@@ -36,11 +28,53 @@ prayer_emojis = {
     "Isha": "🌃"
 }
 
-# Initialize session state
+# --- Function to fetch prayer times using Aladhan API ---
+def fetch_prayer_times(city="New York", country="USA"):
+    url = "http://api.aladhan.com/v1/timingsByCity"
+    params = {
+        "city": city,
+        "country": country,
+        "method": 2  # ISNA
+    }
+    try:
+        response = requests.get(url, params=params)
+        data = response.json()
+        timings = data["data"]["timings"]
+        return {
+            "Fajr": timings["Fajr"],
+            "Dhuhr": timings["Dhuhr"],
+            "Asr": timings["Asr"],
+            "Maghrib": timings["Maghrib"],
+            "Isha": timings["Isha"]
+        }
+    except Exception as e:
+        st.error("Failed to fetch prayer times.")
+        return {
+            "Fajr": "N/A",
+            "Dhuhr": "N/A",
+            "Asr": "N/A",
+            "Maghrib": "N/A",
+            "Isha": "N/A"
+        }
+
+# --- User input for location ---
+st.sidebar.title("📍 Location Settings")
+city = st.sidebar.text_input("City", "New York")
+country = st.sidebar.text_input("Country", "USA")
+if st.sidebar.button("Update Prayer Times"):
+    st.session_state['prayer_times'] = fetch_prayer_times(city, country)
+
+# --- Load or set default prayer times ---
+if 'prayer_times' not in st.session_state:
+    st.session_state['prayer_times'] = fetch_prayer_times(city, country)
+
+prayer_times = st.session_state['prayer_times']
+
+# --- Initialize session state for checkboxes ---
 if 'checked' not in st.session_state:
     st.session_state.checked = {prayer: False for prayer in prayer_times}
 
-# Load historical data from file (persists across app restarts)
+# --- Load prayer history ---
 HISTORY_FILE = "prayer_history.json"
 if not os.path.exists(HISTORY_FILE):
     with open(HISTORY_FILE, "w") as f:
@@ -50,19 +84,19 @@ with open(HISTORY_FILE, "r") as f:
     history_data = json.load(f)
     completed_dates = history_data["completed_dates"]
 
-# Track today's date
+# --- Today's date ---
 today = datetime.date.today()
 today_str = str(today)
 
-# Title and Header
+# --- Title and header ---
 st.title("🌙 Kids' Prayer Times Tracker")
 st.markdown("---")
 
-# Display prayer times with checkboxes
+# --- Display prayer times with checkboxes ---
 for prayer, time in prayer_times.items():
     col1, col2, col3 = st.columns([1, 3, 3])
     with col1:
-        st.markdown(f"<span class='big-font'>{prayer_emojis[prayer]}</span>", unsafe_allow_html=True)
+        st.markdown(f"<span class='big-font'>{prayer_emojis.get(prayer, '🕋')}</span>", unsafe_allow_html=True)
     with col2:
         st.markdown(f"**{prayer}**\n\n`{time}`")
     with col3:
@@ -72,30 +106,29 @@ for prayer, time in prayer_times.items():
             key=prayer
         )
 
-# Progress Tracker
+# --- Progress Tracker ---
 completed = sum(st.session_state.checked.values())
 total = len(prayer_times)
 progress = completed / total
 
-# Update completed dates (only once per day)
+# --- Update history if day is complete ---
 if completed == total and today_str not in completed_dates:
     completed_dates.append(today_str)
     with open(HISTORY_FILE, "w") as f:
         json.dump({"completed_dates": completed_dates}, f)
 
-# Display progress
+# --- Show progress ---
 st.markdown("---")
 st.subheader("Today's Progress 🎉")
 st.markdown(f"**{completed}/{total} Prayers Completed**")
 st.progress(progress)
 
-# Clapping effect if all prayers are done
 if completed == total:
     st.balloons()
     st.success("🌟 Amazing! You finished all prayers today!")
     st.write("👏" * 10 + " YAY! " + "👏" * 10)
 
-# Display total days completed (persists across resets)
+# --- Days Completed Summary ---
 st.markdown("---")
 st.subheader("Total Days Completed")
 st.markdown(f"""
@@ -104,12 +137,13 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# Timeline and Reset button
+# --- Timeline Display ---
 st.markdown("---")
 st.subheader("Day Timeline")
-timeline = "🕒 " + " — ".join([f"{prayer_emojis[prayer]} {time}" for prayer, time in prayer_times.items()])
+timeline = "🕒 " + " — ".join([f"{prayer_emojis.get(prayer, '')} {time}" for prayer, time in prayer_times.items()])
 st.markdown(f"`{timeline}`")
 
+# --- Reset Button ---
 if st.button("Reset Checkboxes"):
     st.session_state.checked = {prayer: False for prayer in prayer_times}
-    st.rerun()  # Refresh to reflect reset checkboxes
+    st.rerun()
