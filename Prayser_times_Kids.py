@@ -29,7 +29,7 @@ prayer_emojis = {
 }
 
 # --- Function to fetch prayer times using Aladhan API ---
-def fetch_prayer_times(city="New York", country="USA"):
+def fetch_prayer_times(city="Cairo", country="Egypt"):
     url = "http://api.aladhan.com/v1/timingsByCity"
     params = {
         "city": city,
