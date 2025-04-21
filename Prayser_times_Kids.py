@@ -78,8 +78,6 @@ if 'checked' not in st.session_state:
 for prayer in prayer_times:
     if prayer not in st.session_state.checked:
         st.session_state.checked[prayer] = False
-    if prayer not in st.session_state:
-        st.session_state[prayer] = False
 
 # --- Load prayer history ---
 HISTORY_FILE = "prayer_history.json"
@@ -109,7 +107,7 @@ for prayer, time in prayer_times.items():
     with col3:
         st.session_state.checked[prayer] = st.checkbox(
             f"Done with {prayer}!",
-            value=st.session_state[prayer],
+            value=st.session_state.checked.get(prayer, False),
             key=prayer
         )
 
@@ -153,6 +151,5 @@ st.markdown(f"`{timeline}`")
 # --- Reset Button ---
 if st.button("Reset Checkboxes"):
     for prayer in prayer_times:
-        st.session_state[prayer] = False
         st.session_state.checked[prayer] = False
     st.rerun()
