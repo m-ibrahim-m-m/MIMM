@@ -1,0 +1,7 @@
+streamlit>=1.28.0
+sentence-transformers>=2.2.2
+scikit-learn>=1.3.0
+numpy>=1.24.3
+torch>=2.0.1
+difflib==1.0.1
+spacy>=3.5.0
