@@ -4,3 +4,4 @@ transformers==4.38.2
 huggingface_hub==0.22.2
 numpy==1.26.4
 scikit-learn==1.4.1.post1
+spacy==3.7.0
