@@ -14,6 +14,7 @@ def load_chatbot():
 class SafetyInstructionChatbot:
     def __init__(self):
         self.model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
+        # Inserting Our new head & Response for safety topics
         self.topic_phrases = {
             "fire safety": ["fire safety", "fire drill", "how to evacuate", "fire alarm protocol",
                             "what to do in case of fire", "fire extinguisher use"],
