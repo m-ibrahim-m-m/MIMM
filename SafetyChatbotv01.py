@@ -128,7 +128,7 @@ if dark_mode:
 
 # Session state initialization
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "🛡️ Welcome! I can help with:\n- Fire safety\n- First aid\n- PPE usage\n- Emergency drills\n\nType 'menu' for help."}]
+    st.session_state.messages = [{"role": "assistant", "content": "🛡️ Welcome! I can help with:\n- Fire safety\n- First aid\n- PPE usage\n- Earthquake drills\n\nType 'menu' for help."}]
     st.title("HSE Procedures Chatbot")
 
 # Display chat history
