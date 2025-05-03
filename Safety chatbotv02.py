@@ -28,17 +28,21 @@ class SafetyInstructionChatbot:
         }
         self.responses = {
             "fire safety": {
-                "text": "🔥 Fire Safety Protocol:\n1. Activate nearest fire alarm\n2. Evacuate using marked exits\n3. Use fire extinguisher only if safe\n4. Gather at designated assembly point",
-                "video": "https://www.youtube.com/watch?v=GVBamXXVD30"},
+                "text": "🔥 Fire Safety Protocol:\n1. Activate nearest fire alarm\n2. Evacuate using marked exits\n3. Use fire extinguisher only if safe\n4. Gather at designated assembly point\n\nℹ️ For more information, please check our safety portal.",
+                "video": "https://www.youtube.com/watch?v=GVBamXXVD30"
+            },
             "first aid": {
-                "text": "🩹 First Aid Basics:\n1. Check scene safety\n2. Call emergency services\n3. Perform CPR if trained\n4. Use AED if available\n5. Stop bleeding with clean cloth",
-                "video": ""},
+                "text": "🩹 First Aid Basics:\n1. Check scene safety\n2. Call emergency services\n3. Perform CPR if trained\n4. Use AED if available\n5. Stop bleeding with clean cloth\n\nℹ️ For more information, please check our safety portal.",
+                "video": ""
+            },
             "chemical spill": {
-                "text": "⚠️ Chemical Spill Response:\n1. Evacuate immediate area\n2. Alert trained personnel\n3. Avoid contact with substance\n4. Use spill kit if trained\n5. Report incident to supervisor",
-                "video": ""},
+                "text": "⚠️ Chemical Spill Response:\n1. Evacuate immediate area\n2. Alert trained personnel\n3. Avoid contact with substance\n4. Use spill kit if trained\n5. Report incident to supervisor\n\nℹ️ For more information, please check our safety portal.",
+                "video": ""
+            },
             "ppe usage": {
-                "text": "🛡️ تشمل هذه المواصفات ما يلي:\n\n- القيود على نوعية الملابس في اماكن العمل\n- حماية الرأس\n- حماية العين والوجة\n- حماية الجسم\n- الوقاية من السقوط\n- حماية السمع\n- حماية اليد والذراع \n- معدات حماية الجهاز التنفسي \n - ملابس عالية الوضوح\n\n- استخدام معدات الوقاية الشخصية:\n يجب اتخاذ جميع الخطوات المنطقية لضمان استخدام أي معدات الوقاية الشخصية المقدمة للموظفين بشكل صحيح. يجب توثيق إجراءات الاستخدام وإتاحتها لمن يحتاجون إليها.يجب على كل موظف استخدام أي معدات وقاية شخصية مقدمة له وفقًا لتعليمات وتدريب تم تلقيه بشأن استخدام معدات الوقاية الشخصية.",
-                    "video": ""},
+                "text": "🛡️ تشمل هذه المواصفات ما يلي:\n\n- القيود على نوعية الملابس في اماكن العمل\n- حماية الرأس\n- حماية العين والوجة\n- حماية الجسم\n- الوقاية من السقوط\n- حماية السمع\n- حماية اليد والذراع \n- معدات حماية الجهاز التنفسي \n - ملابس عالية الوضوح\n\n- استخدام معدات الوقاية الشخصية\n يجب اتخاذ جميع الخطوات المنطقية لضمان استخدام أي معدات الوقاية الشخصية المقدمة للموظفين بشكل صحيح. يجب توثيق إجراءات الاستخدام وإتاحتها لمن يحتاجون إليها.يجب على كل موظف استخدام أي معدات وقاية شخصية مقدمة له وفقًا لتعليمات وتدريب تم تلقيه بشأن استخدام معدات الوقاية الشخصية.\n\nℹ️ لمزيد من المعلومات، يرجى زيارة بوابة السلامة الخاصة بنا.",
+                "video": "https://www.youtube.com/watch?v=xkMdLcB_vpE"
+            },
             "ppe training": {
                 "text": "🎓 **التدريب والتعليم على معدات الوقاية الشخصية (PPE)**\n\n"
                         "**أولاً: التدريب النظري**\n"
@@ -64,11 +68,13 @@ class SafetyInstructionChatbot:
                         "- التخزين الآمن للمعدات\n\n"
                         "**ثالثاً: التدريب الدوري**\n"
                         "- تنظيم تدريبات تنشيطية دورية\n"
-                        "- الاحتفاظ بسجلات التدريب لكل فرد",
-                "video": "https://www.youtube.com/watch?v=omDqPCJH7z4&t=2s"},
+                        "- الاحتفاظ بسجلات التدريب لكل فرد\n\nℹ️ لمزيد من المعلومات، يرجى زيارة بوابة السلامة الخاصة بنا.",
+                "video": ""
+            },
             "earthquake drill": {
-                "text": "🌍 Earthquake Safety:\n1. Drop to hands and knees\n2. Cover head and neck\n3. Hold on to sturdy furniture\n4. Stay away from windows\n5. Evacuate when shaking stops",
-                "video": ""}
+                "text": "🌍 Earthquake Safety:\n1. Drop to hands and knees\n2. Cover head and neck\n3. Hold on to sturdy furniture\n4. Stay away from windows\n5. Evacuate when shaking stops\n\nℹ️ For more information, please check our safety portal.",
+                "video": ""
+            }
         }
 
         # Encode all topic phrases
@@ -130,6 +136,7 @@ class SafetyInstructionChatbot:
                 None,
                 None
             )
+
 
 # Streamlit UI Setup
 st.set_page_config(page_title="Safety Instruction Chatbot", page_icon="🛡️", layout="wide")
