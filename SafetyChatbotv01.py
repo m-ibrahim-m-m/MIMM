@@ -114,7 +114,7 @@ with st.sidebar:
     dark_mode = st.checkbox("🌙 Enable Dark Mode", value=False)
     st.markdown("---")
     st.subheader("Supported Safety Topics")
-    for topic in ["fire safety", "first aid", "chemical spill", "ppe usage","ppe training", "earthquake drill"]:
+    for topic in ["fire safety", "first aid", "chemical spill", "ppe usage", "earthquake drill"]:
         st.markdown(f"- {topic.title()}")
 
 if dark_mode:
