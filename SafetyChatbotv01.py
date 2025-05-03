@@ -37,7 +37,7 @@ class SafetyInstructionChatbot:
                 "video": ""},
             "ppe usage": {
                 "text": "🛡️ PPE Requirements:\n1. Inspect equipment before use\n2. Wear gloves, goggles, and mask\n3. Ensure proper fit\n4. Decontaminate after use\n5. Report damaged equipment",
-                "video": ""},
+                "video": "https://www.youtube.com/watch?v=omDqPCJH7z4&t=2s"},
             "earthquake drill": {
                 "text": "🌍 Earthquake Safety:\n1. Drop to hands and knees\n2. Cover head and neck\n3. Hold on to sturdy furniture\n4. Stay away from windows\n5. Evacuate when shaking stops",
                 "video": ""}
