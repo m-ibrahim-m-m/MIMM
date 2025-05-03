@@ -28,7 +28,7 @@ class SafetyInstructionChatbot:
         }
         self.responses = {
             "fire safety": {
-                "text": "🔥 Fire Safety Protocol:\n1. Activate nearest fire alarm\n2. Evacuate using marked exits\n3. Use fire extinguisher only if safe\n4. Gather at designated assembly point\n\n- ℹ️ For more information, please check our safety portal.",
+                "text": "🔥 Fire Safety Protocol:\n1. Activate nearest fire alarm\n2. Evacuate using marked exits\n3. Use fire extinguisher only if safe\n4. Gather at designated assembly point\n- ℹ️ For more information, please check our safety portal.",
                 "video": "https://www.youtube.com/watch?v=GVBamXXVD30"}
                 ,
                 "first aid": {
