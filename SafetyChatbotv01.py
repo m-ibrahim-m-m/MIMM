@@ -31,10 +31,10 @@ class SafetyInstructionChatbot:
                 "video": "https://www.youtube.com/watch?v=GVBamXXVD30"},
             "first aid": {
                 "text": "🩹 First Aid Basics:\n1. Check scene safety\n2. Call emergency services\n3. Perform CPR if trained\n4. Use AED if available\n5. Stop bleeding with clean cloth",
-                "video": ""},
+                "video": "https://www.youtube.com/watch?v=ea1RJUOiNfQ"},
             "chemical spill": {
                 "text": "⚠️ Chemical Spill Response:\n1. Evacuate immediate area\n2. Alert trained personnel\n3. Avoid contact with substance\n4. Use spill kit if trained\n5. Report incident to supervisor",
-                "video": ""},
+                "video": "https://www.youtube.com/watch?v=9uDQMz6wrvA"},
             "ppe usage": {
                 "text": "🛡️ PPE Requirements:\n1. Inspect equipment before use\n2. Wear gloves, goggles, and mask\n3. Ensure proper fit\n4. Decontaminate after use\n5. Report damaged equipment",
                 "video": "https://www.youtube.com/watch?v=omDqPCJH7z4&t=2s"},
