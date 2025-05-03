@@ -1,3 +1,4 @@
+# Libraries load
 import streamlit as st
 from sentence_transformers import SentenceTransformer
 import numpy as np
@@ -5,11 +6,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 import difflib
 import urllib.parse
 import spacy
-
+# Function to loas the Chatbot once not every convercation
 @st.cache_resource
 def load_chatbot():
     return SafetyInstructionChatbot()
-
+# Creating a class of the pretrained Model
 class SafetyInstructionChatbot:
     def __init__(self):
         self.model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
@@ -59,7 +60,7 @@ class SafetyInstructionChatbot:
             "official protocol", "safety best practices", "OSHA standards"
         ]
         return f"{query} {np.random.choice(safety_keywords)}".strip()
-
+# Generate sentence embeddings
     def get_response(self, user_input, threshold=0.75):
         try:
             user_embedding = self.model.encode(user_input.lower())
@@ -69,7 +70,7 @@ class SafetyInstructionChatbot:
             best_phrase = self.all_phrases[best_index]
             topic = self.phrase_to_topic[best_phrase]
 
-            if best_similarity > threshold:
+            if best_similarity > threshold: # Trying to suggest topics in case of falbacks
                 response = self.responses[topic]
                 confidence_msg = f"🧠 Matched topic: **{topic.title()}** (confidence: {best_similarity:.2f})"
                 video_msg = f"\n📺 Watch demonstration: {response['video']}" if response["video"] else ""
@@ -84,7 +85,7 @@ class SafetyInstructionChatbot:
                         "❓ Need more help? Email: safety-support@company.com",
                         None
                     )
-                else:
+                else:# Searching Google for the unkown topics
                     search_query = self.rephrase_query(user_input)
                     encoded_query = urllib.parse.quote_plus(search_query)
                     google_url = f"https://www.google.com/search?q={encoded_query}"
