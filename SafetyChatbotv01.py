@@ -114,7 +114,7 @@ with st.sidebar:
     dark_mode = st.checkbox("🌙 Enable Dark Mode", value=False)
     st.markdown("---")
     st.subheader("Supported Safety Topics")
-    for topic in ["fire safety", "first aid", "chemical spill", "ppe usage", "earthquake drill"]:
+    for topic in ["fire safety", "first aid", "chemical spill", "ppe usage","ppe training", "earthquake drill"]:
         st.markdown(f"- {topic.title()}")
 
 if dark_mode:
@@ -129,6 +129,7 @@ if dark_mode:
 # Session state initialization
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "assistant", "content": "🛡️ Welcome! I can help with:\n- Fire safety\n- First aid\n- PPE usage\n- Emergency drills\n\nType 'menu' for help."}]
+    st.title("HSE Procedures Chatbot")
 
 # Display chat history
 for msg in st.session_state.messages:
