@@ -52,9 +52,9 @@ if uploaded_file is not None:
         st.error("❌ Excel must have: question, answer, topic, video_url")
     else:
         st.success("✅ File loaded!")
-    try:return pd.read_excel(""D:/AI Course\New Material from eng. Mohamed Goma/Maintenance Orders Status Report Model/Safety chatbotV03.xlsx"")
-    except FileNotFoundError:
-        return pd.DataFrame()
+    try:
+        return pd.read_excel(""D:/AI Course\New Material from eng. Mohamed Goma/Maintenance Orders Status Report Model/Safety chatbotV03.xlsx"")
+   
 
             # Compute embeddings
             questions = df['question'].tolist()
