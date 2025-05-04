@@ -46,13 +46,15 @@ if dark_mode:
 # Upload
 uploaded_file = st.file_uploader("📤 Upload Excel File", type=["xlsx"])
 
-if uploaded_file:
-    try:
-        df = pd.read_excel(uploaded_file)
-        if not all(col in df.columns for col in ['question', 'answer', 'topic', 'video_url']):
-            st.error("❌ Excel must have: question, answer, topic, video_url")
-        else:
-            st.success("✅ File loaded!")
+if uploaded_file is not None:
+    df = pd.read_excel(uploaded_file)
+    if not all(col in df.columns for col in ['question', 'answer', 'topic', 'video_url']):
+        st.error("❌ Excel must have: question, answer, topic, video_url")
+    else:
+        st.success("✅ File loaded!")
+    try:return pd.read_excel(""D:/AI Course\New Material from eng. Mohamed Goma/Maintenance Orders Status Report Model/Safety chatbotV03.xlsx"")
+    except FileNotFoundError:
+        return pd.DataFrame()
 
             # Compute embeddings
             questions = df['question'].tolist()
