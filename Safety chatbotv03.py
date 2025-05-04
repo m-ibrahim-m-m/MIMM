@@ -73,7 +73,7 @@ if uploaded_file:
                     st.markdown(prompt)
 
                 if prompt.lower() == "menu":
-                    reply = "🧾 Available Topics:\n- Fire safety\n- First aid\n- PPE usage\n- PPE Training\n- Chemical spills\n- Earthquake response"
+                    reply = "🧾 Available Topics:\n- {df[question]}"
                     st.session_state.messages.append({"role": "assistant", "content": reply})
                     with st.chat_message("assistant"):
                         st.markdown(reply)
