@@ -53,7 +53,7 @@ if uploaded_file is not None:
     else:
         st.success("✅ File loaded!")
     try:
-        return pd.read_excel(""D:/AI Course\New Material from eng. Mohamed Goma/Maintenance Orders Status Report Model/Safety chatbotV03.xlsx"")
+        return pd.read_excel("D:/AI Course\New Material from eng. Mohamed Goma/Maintenance Orders Status Report Model/Safety chatbotV03.xlsx")
    
 
             # Compute embeddings
