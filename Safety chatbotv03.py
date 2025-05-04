@@ -52,8 +52,8 @@ if uploaded_file is not None:
         st.error("❌ Excel must have: question, answer, topic, video_url")
     else:
         st.success("✅ File loaded!")
-try:
-    return pd.read_excel(https://github.com/m-ibrahim-m-m/MIMM/blob/Safety-chatbot/Safety%20chatbotV03.xlsx)
+# try:
+#     return pd.read_excel(https://github.com/m-ibrahim-m-m/MIMM/blob/Safety-chatbot/Safety%20chatbotV03.xlsx)
    
 
             # Compute embeddings
