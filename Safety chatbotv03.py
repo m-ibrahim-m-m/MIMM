@@ -73,7 +73,10 @@ if uploaded_file:
                     st.markdown(prompt)
 
                 if prompt.lower() == "menu":
-                    reply = "🧾 Available Topics:\n- "df[question]
+                    topics_list = df['question'].dropna().unique().tolist()
+                    topics_formatted = "\n- " + "\n- ".join(topics_list)
+                    reply = f"🧾 Available Topics:{topics_formatted}"
+                    
                     st.session_state.messages.append({"role": "assistant", "content": reply})
                     with st.chat_message("assistant"):
                         st.markdown(reply)
