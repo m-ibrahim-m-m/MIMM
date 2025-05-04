@@ -75,7 +75,7 @@ if uploaded_file:
                 if prompt.lower() == "menu":
                     topics_list = df['question'].dropna().unique().tolist()
                     topics_formatted = "\n- " + "\n- ".join(topics_list)
-                    reply = f"🧾 Available Topics:{topics_formatted}"
+                    reply = f"🧾 Available Q&A:{topics_formatted}"
                     
                     st.session_state.messages.append({"role": "assistant", "content": reply})
                     with st.chat_message("assistant"):
