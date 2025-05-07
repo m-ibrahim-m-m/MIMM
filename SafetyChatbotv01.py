@@ -6,7 +6,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import difflib
 import urllib.parse
 import spacy
-# Function to loas the Chatbot once not every convercation
+# Function to load the Chatbot once not every convercation
 @st.cache_resource
 def load_chatbot():
     return SafetyInstructionChatbot()
