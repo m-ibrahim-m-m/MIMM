@@ -122,8 +122,11 @@ with st.sidebar:
 if dark_mode:
     st.markdown("""
         <style>
-            .stApp { background-color: #1e1e1e; color: white; }
-            .stChatMessage { background-color: #2e2e2e; }
+            stApp { background-color: #1e1e1e; color: white; }
+            .stChatMessage { background-color: #2e2e2e; color: white; }
+            .sidebar-content, .stSidebar, .stMarkdown, .stSubheader, .stHeader {
+            color: white !important;
+            }
             a { color: #4dabf7; }
         </style>
     """, unsafe_allow_html=True)
