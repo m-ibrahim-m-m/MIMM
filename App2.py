@@ -234,7 +234,7 @@ def section_header(icon, title, badge=None):
 
 
 def fig_layout(fig):
-    fig.update_layout(**PLOTLY_LAYOUT)
+    apply_layout(fig)
     return fig
 
 
@@ -353,7 +353,7 @@ def plot_department_orders(fd):
     fig = px.bar(dc, x='Department', y='Count', color='Order Status', text='Count',
                  title="Orders by Department", color_discrete_map=STATUS_COLORS)
     fig.update_traces(texttemplate='%{text:,}', textposition='outside', marker_line_width=0)
-    fig.update_layout(**PLOTLY_LAYOUT)
+    apply_layout(fig)
     st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -368,7 +368,7 @@ def plot_status_trends(fd):
                   color_discrete_map=STATUS_COLORS, line_shape='spline')
     fig.update_traces(line_width=2.5, marker_size=6)
     fig.update_xaxes(categoryorder='array', categoryarray=MONTH_ORDER, tickangle=45, tickfont_size=10)
-    fig.update_layout(**PLOTLY_LAYOUT)
+    apply_layout(fig)
     st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -382,7 +382,7 @@ def plot_order_type_analysis(fd):
         fig = px.pie(td, names='Order Type', values='Count', title="Order Type Distribution", hole=0.5)
         fig.update_traces(textposition='inside', textinfo='percent+label',
                           marker=dict(line=dict(color='#0F1923', width=2)))
-        fig.update_layout(**PLOTLY_LAYOUT)
+        apply_layout(fig)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
@@ -394,7 +394,7 @@ def plot_order_type_analysis(fd):
                       markers=True, title="Monthly Order Type Trends", line_shape='spline')
         fig.update_traces(line_width=2, marker_size=5)
         fig.update_xaxes(tickangle=45, tickfont_size=10)
-        fig.update_layout(**PLOTLY_LAYOUT)
+        apply_layout(fig)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -419,7 +419,7 @@ def plot_cost_analysis(fd):
         fig = px.bar(dev_data, x='Order Type', y='Cost Deviation', color='Plant',
                      title="Top 10 Cost Savings (by Order Type)", text_auto='.2s')
         fig.update_traces(marker_line_width=0)
-        fig.update_layout(**PLOTLY_LAYOUT)
+        apply_layout(fig)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
@@ -429,7 +429,7 @@ def plot_cost_analysis(fd):
                      color_discrete_sequence=[COLORS["accent"], COLORS["planned"],
                                               COLORS["warning"], COLORS["success"]])
         fig.update_traces(line_width=1.5)
-        fig.update_layout(**PLOTLY_LAYOUT)
+        apply_layout(fig)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
