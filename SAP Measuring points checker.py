@@ -114,7 +114,12 @@ if not mp_df.empty and not wo_df.empty and not expected_df.empty:
 
         # --- Display Outputs ---
         st.subheader("📌 Measuring Points with Limit Check")
-        st.dataframe(mp_filtered.style.applymap(color_limit_status, subset=['LimitStatus']), use_container_width=True)
+        styled_mp = mp_filtered.style.map(
+            color_limit_status, 
+            subset=['LimitStatus']
+        )
+        
+        st.dataframe(styled_mp, use_container_width=True)
 
         st.subheader("📌 Filtered Work Orders in Selected Month & Group")
         st.dataframe(wo_filtered, use_container_width=True)
