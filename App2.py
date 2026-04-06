@@ -37,12 +37,21 @@ PLOTLY_LAYOUT = dict(
     plot_bgcolor="rgba(0,0,0,0)",
     font=dict(family="'IBM Plex Sans', sans-serif", color="#E2E8F0", size=12),
     title=dict(font=dict(size=15, color="#E2E8F0"), x=0.01, xanchor="left"),
-    legend=dict(bgcolor="rgba(0,0,0,0)", bordercolor="rgba(255,255,255,0.08)", borderwidth=1),
     xaxis=dict(gridcolor="rgba(255,255,255,0.05)", linecolor="rgba(255,255,255,0.1)"),
     yaxis=dict(gridcolor="rgba(255,255,255,0.05)", linecolor="rgba(255,255,255,0.1)"),
     margin=dict(l=16, r=16, t=48, b=16),
     colorway=["#00C2CB", "#3B82F6", "#00B37E", "#F59E0B", "#EF4444", "#F97316"],
 )
+
+# Default legend style — merge into update_layout calls that don't set their own legend
+LEGEND_DEFAULT = dict(bgcolor="rgba(0,0,0,0)", bordercolor="rgba(255,255,255,0.08)", borderwidth=1)
+
+
+def apply_layout(fig, legend=None):
+    """Apply base dark theme then optionally override legend."""
+    fig.update_layout(**PLOTLY_LAYOUT)
+    fig.update_layout(legend={**LEGEND_DEFAULT, **(legend or {})})
+    return fig
 
 CUSTOM_CSS = """
 <style>
@@ -301,9 +310,15 @@ def plot_completion_donuts(fd):
                            font=dict(size=22, color="#E2E8F0", family="IBM Plex Mono"), showarrow=False)
         fig.add_annotation(text="complete", x=0.5, y=0.38,
                            font=dict(size=11, color="#64748B"), showarrow=False)
-        fig.update_layout(title_text=title, showlegend=True,
-                          legend=dict(orientation="h", y=-0.12, x=0.5, xanchor="center"),
-                          **PLOTLY_LAYOUT)
+        fig.update_layout(
+            title_text=title, showlegend=True,
+            legend=dict(orientation="h", y=-0.12, x=0.5, xanchor="center",
+                        bgcolor="rgba(0,0,0,0)", bordercolor="rgba(255,255,255,0.08)", borderwidth=1),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="'IBM Plex Sans', sans-serif", color="#E2E8F0", size=12),
+            margin=dict(l=16, r=16, t=48, b=16),
+        )
         return fig
 
     col1, col2 = st.columns(2)
@@ -332,7 +347,7 @@ def plot_status_distribution(fd):
                      title="Orders by Status — Planned vs Unplanned",
                      color_discrete_map={'Planned': COLORS["planned"], 'Unplanned': COLORS["unplanned"]})
         fig.update_traces(texttemplate='%{text:,}', textposition='outside', marker_line_width=0, opacity=0.9)
-        fig.update_layout(legend=dict(orientation="h", y=1.08), **PLOTLY_LAYOUT)
+        apply_layout(fig, legend=dict(orientation="h", y=1.08))
         st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
@@ -341,7 +356,7 @@ def plot_status_distribution(fd):
         fig2 = px.bar(ps, x='Plant', y='Count', color='Order Status', barmode='stack',
                       title="Status Split per Plant", color_discrete_map=STATUS_COLORS)
         fig2.update_traces(marker_line_width=0)
-        fig2.update_layout(**PLOTLY_LAYOUT)
+        apply_layout(fig2)
         st.plotly_chart(fig2, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -406,7 +421,8 @@ def plot_order_type_analysis(fd):
                 marker_color=COLORS["planned"], marker_line_width=0, opacity=0.85)
     fig.add_bar(x=cd['Order Type'], y=cd['Actual'], name='Actual',
                 marker_color=COLORS["accent"], marker_line_width=0, opacity=0.85)
-    fig.update_layout(barmode='group', title_text="Avg Planned vs Actual Cost by Order Type", **PLOTLY_LAYOUT)
+    apply_layout(fig)
+    fig.update_layout(barmode='group', title_text="Avg Planned vs Actual Cost by Order Type")
     st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
