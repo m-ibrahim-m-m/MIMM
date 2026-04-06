@@ -1,9 +1,9 @@
 # maintenance_dashboard.py
-
 import pandas as pd
 import streamlit as st
 import plotly.express as px
 import numpy as np
+import io
 
 
 # Configure page settings
@@ -45,7 +45,7 @@ def process_data(data):
         priority_order = [
             'CNCL',  # Canceled
             'CNF',   # Completed
-            'EXEC',  # Execution
+            'JIPR',  # Execution
             'NCMP'   # Not Completed
         ]
         for status in priority_order:
@@ -53,7 +53,7 @@ def process_data(data):
                 return {
                     'CNCL': 'Canceled',
                     'CNF': 'Completed',
-                    'EXEC': 'In Progress',
+                    'JIPR': 'In Progress',
                     'NCMP': 'Not Executed & Deleted'
                 }[status]
         return 'Open'
@@ -93,6 +93,18 @@ def create_filters(data):
         default=data['Month'].unique()
     )
     
+    # Plan Type Filter
+    data['Plan Type'] = np.where(
+        data['Maintenance Plan'].notna(),
+        'Planned',
+        'Unplanned'
+    )
+    plan_type = st.sidebar.multiselect(
+        "Plan Type:",
+        options=data['Plan Type'].unique(),
+        default=data['Plan Type'].unique()
+    )
+    
     # Status selector
     statuses = st.sidebar.multiselect(
         "Order Statuses:",
@@ -106,14 +118,20 @@ def create_filters(data):
         options=data['Main Work Center'].unique(),
         default=data['Main Work Center'].unique()
     )
-     # Work center selector
+     # Order Type selector
     Order_type = st.sidebar.multiselect(
         "Work Order Type:",
         options=data['Order Type'].unique(),
         default=data['Order Type'].unique()
     )
+    # Task list selector
+    Group = st.sidebar.multiselect(
+        "Task List Code:",
+        options=data['Group'].unique(),
+        default=data['Group'].unique()
+    )
     
-    return plants, years, months, statuses, work_center ,Order_type
+    return plants, years, months, statuses, work_center ,Order_type, Group, plan_type
 
 def display_filter_summary(filtered_data):
     """Show the selected filters summary"""
@@ -277,29 +295,77 @@ def plot_order_status_distribution(filtered_data):
             x=1 ))
     
     st.plotly_chart(fig, use_container_width=True)
+    
+        # Create grouped status counts
+    status_counts = filtered_data.groupby(
+        ['Order Status','Plant']
+    ).size().reset_index(name='Count')
+    
+    fig1 = px.bar(
+        status_counts,
+        x='Plant',
+        y='Count',
+        color='Order Status',
+        barmode='group',
+        text='Count',
+        title="Orders by Status with Plant Breakdown")
+    
+    
+    fig1.update_traces(
+        texttemplate='%{text:,}',
+        textposition='outside'
+    )
+    
+    fig1.update_layout(
+        xaxis_title="PLant",
+        yaxis_title="Number of Orders",
+        legend_title="Plant",
+        uniformtext_minsize=10,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1 ))
+    
+    st.plotly_chart(fig1, use_container_width=True)
 
 def plot_department_orders(filtered_data):
-    """Visualize department-wise order counts"""
+    """Visualize department-wise order counts by order status"""
+
     st.subheader("🏗️ Department-wise Order Distribution")
-    
-    department_counts = filtered_data['Main Work Center'].value_counts().reset_index()
-    department_counts.columns = ['Department', 'Count']
-    
+
+    # Correct aggregation
+    department_counts = (
+        filtered_data
+        .groupby(['Main Work Center', 'Order Status'])
+        .size()
+        .reset_index(name='Count')
+    )
+
+    department_counts.rename(
+        columns={'Main Work Center': 'Department'},
+        inplace=True
+    )
+
     fig = px.bar(
         department_counts,
         x='Department',
         y='Count',
-        color='Department',
+        color='Order Status',
         text='Count',
         title="Orders by Department"
     )
+
     fig.update_traces(texttemplate='%{text:,}', textposition='outside')
     fig.update_layout(
         xaxis_title="Department",
         yaxis_title="Number of Orders",
-        showlegend=False
+        legend_title="Order Status"
     )
+
     st.plotly_chart(fig, use_container_width=True)
+
 
 def plot_status_trends(filtered_data):
     """Visualize order status trends with proper month order"""
@@ -468,6 +534,20 @@ def show_raw_data(filtered_data):
         height=400
     )
 
+    # Export to Excel
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        filtered_data.to_excel(writer, index=False, sheet_name='Filtered Data')
+    buffer.seek(0)
+
+    st.download_button(
+        label="📥 Download Raw Data as Excel",
+        data=buffer,
+        file_name="filtered_maintenance_data.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        key="download_excel"
+    )
+
 def main():
     """Main application flow"""
     st.title("🏭 Maintenance Operations Analytics Dashboard")
@@ -487,7 +567,7 @@ def main():
         return
     
     # Create filters and filter data
-    plants, years, months, statuses, work_center, Order_type = create_filters(processed_data)
+    plants, years, months, statuses, work_center, Order_type ,Group,Plan_Type= create_filters(processed_data)
     
     filtered_data = processed_data[
         (processed_data['Plant'].isin(plants)) &
@@ -495,7 +575,9 @@ def main():
         (processed_data['Month'].isin(months)) &
         (processed_data['Order Status'].isin(statuses)) &
         (processed_data['Main Work Center'].isin(work_center))&
-        (processed_data['Order Type'].isin(Order_type))
+        (processed_data['Order Type'].isin(Order_type))&
+        (processed_data['Group'].isin(Group))&
+        (processed_data['Plan Type'].isin(Plan_Type))
     ]
     
     # Dashboard layout
