@@ -3,6 +3,10 @@ import streamlit as st
 import plotly.express as px
 import numpy as np
 import io
+import warnings
+
+# Suppress specific FutureWarning from Plotly + Pandas
+warnings.filterwarnings("ignore", category=FutureWarning, module="plotly.express")
 
 # ========================= PAGE CONFIG =========================
 st.set_page_config(
@@ -33,7 +37,8 @@ def process_data(data):
     # Convert dates
     date_cols = ['Basic start date', 'Basic finish date']
     for col in date_cols:
-        data[col] = pd.to_datetime(data[col], errors='coerce')
+        if col in data.columns:
+            data[col] = pd.to_datetime(data[col], errors='coerce')
 
     # Extract temporal features
     data['Year'] = data['Basic start date'].dt.year
@@ -86,7 +91,6 @@ def create_filters(data):
         value=(int(data['Year'].min()), int(data['Year'].max()))
     )
 
-    # Sorted months
     month_order = ['January', 'February', 'March', 'April', 'May', 'June',
                    'July', 'August', 'September', 'October', 'November', 'December']
     available_months = sorted(data['Month'].dropna().unique(),
@@ -149,7 +153,7 @@ def display_filter_summary(filtered_data):
 def display_kpis(filtered_data):
     st.header("📊 Key Metrics (Sorted Ascending)")
 
-    planned_orders = filtered_data[filtered_data['Plan Type'] == 'Planned']
+    planned_orders = filtered_data[filtered_data['Plan Type'] == 'Planned'].copy()
     total_planned = len(planned_orders)
     completed_planned = len(planned_orders[planned_orders['Order Status'] == 'Completed'])
     planned_completion_pct = (completed_planned / total_planned * 100) if total_planned > 0 else 0
@@ -167,7 +171,6 @@ def display_kpis(filtered_data):
         ("Avg Cost Deviation (EGP)", filtered_data['Cost Deviation'].mean(), "", lambda x: f"{x:,.2f}")
     ]
 
-    # Sort by value ascending
     sorted_metrics = sorted(
         [{"label": l, "value": v, "help": h, "formatter": f} for l, v, h, f in metrics],
         key=lambda x: x["value"]
@@ -182,7 +185,6 @@ def display_kpis(filtered_data):
                 help=metric["help"]
             )
 
-    # Completion pie charts
     st.subheader("📈 Completion Breakdown")
     col1, col2 = st.columns(2)
 
@@ -197,8 +199,6 @@ def display_kpis(filtered_data):
             )
             fig.update_traces(textinfo='percent+label', textposition='inside')
             st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("No planned orders in current filters.")
 
     with col2:
         if total_orders > 0:
@@ -211,14 +211,14 @@ def display_kpis(filtered_data):
             )
             fig.update_traces(textinfo='percent+label', textposition='inside')
             st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("No orders in current filters.")
 
 
 def plot_order_status_distribution(filtered_data):
     st.subheader("📊 Order Status Distribution (Planned vs Unplanned)")
 
-    status_counts = filtered_data.groupby(['Order Status', 'Plan Type']).size().reset_index(name='Count')
+    # Fixed groupby to avoid FutureWarning
+    status_counts = (filtered_data.groupby(['Order Status', 'Plan Type'], observed=True)
+                     .size().reset_index(name='Count'))
 
     fig = px.bar(
         status_counts,
@@ -235,9 +235,10 @@ def plot_order_status_distribution(filtered_data):
     st.plotly_chart(fig, use_container_width=True)
 
     # Plant breakdown
-    plant_status = filtered_data.groupby(['Plant', 'Order Status']).size().reset_index(name='Count')
-    fig2 = px.bar(plant_status, x='Plant', y='Count', color='Order Status', barmode='group',
-                  title="Orders by Status per Plant")
+    plant_status = (filtered_data.groupby(['Plant', 'Order Status'], observed=True)
+                    .size().reset_index(name='Count'))
+    fig2 = px.bar(plant_status, x='Plant', y='Count', color='Order Status',
+                  barmode='group', title="Orders by Status per Plant")
     fig2.update_traces(texttemplate='%{text:,}', textposition='outside')
     st.plotly_chart(fig2, use_container_width=True)
 
@@ -245,7 +246,8 @@ def plot_order_status_distribution(filtered_data):
 def plot_department_orders(filtered_data):
     st.subheader("🏗️ Department-wise Order Distribution")
 
-    dept_counts = filtered_data.groupby(['Main Work Center', 'Order Status']).size().reset_index(name='Count')
+    dept_counts = (filtered_data.groupby(['Main Work Center', 'Order Status'], observed=True)
+                   .size().reset_index(name='Count'))
     dept_counts.rename(columns={'Main Work Center': 'Department'}, inplace=True)
 
     fig = px.bar(
@@ -262,11 +264,11 @@ def plot_department_orders(filtered_data):
 
 def plot_status_trends(filtered_data):
     st.subheader("📈 Status Trends Over Time")
-
     month_order = ['January', 'February', 'March', 'April', 'May', 'June',
                    'July', 'August', 'September', 'October', 'November', 'December']
 
-    trend_data = filtered_data.groupby(['Year', 'Month', 'Order Status']).size().reset_index(name='Count')
+    trend_data = (filtered_data.groupby(['Year', 'Month', 'Order Status'], observed=True)
+                  .size().reset_index(name='Count'))
     trend_data['Month'] = pd.Categorical(trend_data['Month'], categories=month_order, ordered=True)
     trend_data = trend_data.sort_values(['Year', 'Month'])
 
@@ -285,7 +287,6 @@ def plot_status_trends(filtered_data):
 
 def plot_order_type_analysis(filtered_data):
     st.subheader("📦 Order Type Analysis")
-
     col1, col2 = st.columns(2)
 
     with col1:
@@ -296,7 +297,8 @@ def plot_order_type_analysis(filtered_data):
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        trend_data = filtered_data.groupby(['Year', 'Month', 'Order Type']).size().reset_index(name='Count')
+        trend_data = (filtered_data.groupby(['Year', 'Month', 'Order Type'], observed=True)
+                      .size().reset_index(name='Count'))
         month_order = ['January', 'February', 'March', 'April', 'May', 'June',
                        'July', 'August', 'September', 'October', 'November', 'December']
         trend_data['Month'] = pd.Categorical(trend_data['Month'], categories=month_order, ordered=True)
@@ -308,7 +310,7 @@ def plot_order_type_analysis(filtered_data):
 
     # Cost by Order Type
     st.subheader("💸 Order Type Cost Analysis")
-    cost_data = filtered_data.groupby('Order Type').agg({
+    cost_data = filtered_data.groupby('Order Type', observed=True).agg({
         'Total planned costs': 'mean',
         'Total sum (actual)': 'mean',
         'Cost Deviation': 'mean'
@@ -321,8 +323,8 @@ def plot_order_type_analysis(filtered_data):
 
 def plot_cost_analysis(filtered_data):
     st.subheader("💵 Cost Analysis")
-
     cols = st.columns(2)
+
     with cols[0]:
         dev_data = filtered_data.nsmallest(10, 'Cost Deviation')
         fig = px.bar(dev_data, x='Order Type', y='Cost Deviation', color='Plant',
@@ -370,10 +372,10 @@ def main():
         st.warning("⚠️ No data available. Please upload an Excel file.")
         st.stop()
 
-    # Filters (placed here to prevent SessionInfo error)
+    # Filters
     plants, years, months, plan_type, statuses, work_centers, order_types, groups = create_filters(data)
 
-    # Apply filters
+    # Apply filters with .copy() to avoid SettingWithCopyWarning
     filtered_data = data[
         (data['Plant'].isin(plants)) &
         (data['Year'].between(years[0], years[1])) &
