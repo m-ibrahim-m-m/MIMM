@@ -1,9 +1,8 @@
-# maintenance_dashboard.py
-
 import pandas as pd
 import streamlit as st
 import plotly.express as px
 import numpy as np
+import io
 
 
 # Configure page settings
@@ -29,23 +28,23 @@ def process_data(data):
     """Clean and transform raw data"""
     if data.empty:
         return data
-
+    
     # Convert dates and extract temporal features
     date_cols = ['Basic start date', 'Basic finish date']
     for col in date_cols:
         data[col] = pd.to_datetime(data[col], errors='coerce')
-
+    
     data['Year'] = data['Basic start date'].dt.year
     data['Month'] = data['Basic start date'].dt.month_name()
     data['Quarter'] = data['Basic start date'].dt.quarter
-
+    
     # Calculate status categories
     def determine_status(row):
         statuses = f"{row['System status']} {row['User Status']}".split()
         priority_order = [
             'CNCL',  # Canceled
             'CNF',   # Completed
-            'EXEC',  # Execution
+            'JIPR',  # Execution
             'NCMP'   # Not Completed
         ]
         for status in priority_order:
@@ -53,23 +52,23 @@ def process_data(data):
                 return {
                     'CNCL': 'Canceled',
                     'CNF': 'Completed',
-                    'EXEC': 'In Progress',
+                    'JIPR': 'In Progress',
                     'NCMP': 'Not Executed & Deleted'
                 }[status]
         return 'Open'
-
+    
     data['Order Status'] = data.apply(determine_status, axis=1)
-
+    
     # Calculate cost metrics
     data['Cost Deviation'] = data['Total sum (actual)'] - data['Total planned costs']
     data['Cost Variance %'] = (data['Cost Deviation'] / data['Total planned costs']).replace([np.inf, -np.inf], np.nan) * 100
-
+    
     return data
 
 def create_filters(data):
     """Generate interactive filters in sidebar"""
     st.sidebar.header("🔍 Filter Options")
-
+    
     # Plant multi-select
     plants = st.sidebar.multiselect(
         "Select Plants:",
@@ -77,7 +76,7 @@ def create_filters(data):
         default=data['Plant'].unique()[:2],
         help="Filter by plant location"
     )
-
+    
     # Year selector
     years = st.sidebar.slider(
         "Select Year Range:",
@@ -85,45 +84,63 @@ def create_filters(data):
         max_value=int(data['Year'].max()),
         value=(int(data['Year'].min()), int(data['Year'].max()))
     )
-
+    
     # Month selector
     months = st.sidebar.multiselect(
         "Select Month:",
         options=data['Month'].unique(),
         default=data['Month'].unique()
     )
-
+    
+    # Plan Type Filter
+    data['Plan Type'] = np.where(
+        data['Maintenance Plan'].notna(),
+        'Planned',
+        'Unplanned'
+    )
+    plan_type = st.sidebar.multiselect(
+        "Plan Type:",
+        options=data['Plan Type'].unique(),
+        default=data['Plan Type'].unique()
+    )
+    
     # Status selector
     statuses = st.sidebar.multiselect(
         "Order Statuses:",
         options=data['Order Status'].unique(),
         default=data['Order Status'].unique()
     )
-
+    
     # Work center selector
     work_center = st.sidebar.multiselect(
         "Department:",
         options=data['Main Work Center'].unique(),
         default=data['Main Work Center'].unique()
     )
-     # Work center selector
+     # Order Type selector
     Order_type = st.sidebar.multiselect(
         "Work Order Type:",
         options=data['Order Type'].unique(),
         default=data['Order Type'].unique()
     )
-
-    return plants, years, months, statuses, work_center ,Order_type
+    # Task list selector
+    Group = st.sidebar.multiselect(
+        "Task List Code:",
+        options=data['Group'].unique(),
+        default=data['Group'].unique()
+    )
+    
+    return plants, years, months, statuses, work_center ,Order_type, Group, plan_type
 
 def display_filter_summary(filtered_data):
     """Show the selected filters summary"""
     st.header("🔎 Active Filters Summary")
     col1, col2 ,col3= st.columns(3)
-
+    
     with col1:
         st.subheader("Selected Plants:")
         st.write(", ".join(filtered_data['Plant'].unique()))
-
+    
     with col2:
         st.subheader("Selected Months:")
         st.write(", ".join(filtered_data['Month'].unique()))
@@ -134,13 +151,13 @@ def display_filter_summary(filtered_data):
 def display_kpis(filtered_data):
     """Show key performance indicators sorted by value ascending"""
     st.header("📊 Key Metrics (Ascending Order)")
-
+    
     # Calculate completion percentages
     planned_orders = filtered_data[filtered_data['Maintenance Plan'].notna()]
     total_planned = len(planned_orders)
     completed_planned = len(planned_orders[planned_orders['Order Status'] == 'Completed'])
     planned_completion_pct = (completed_planned / total_planned * 100) if total_planned > 0 else 0
-
+    
     total_orders = len(filtered_data)
     completed_orders = len(filtered_data[filtered_data['Order Status'] == 'Completed'])
     overall_completion_pct = (completed_orders / total_orders * 100) if total_orders > 0 else 0
@@ -159,7 +176,7 @@ def display_kpis(filtered_data):
         ("Avg Cost Deviation", filtered_data['Cost Deviation'].mean(), 
          "EGP", lambda x: f"{x:,.2f}")
     ]
-
+    
     # Create sortable data structure
     metric_objects = [
         {
@@ -170,13 +187,13 @@ def display_kpis(filtered_data):
         } 
         for (label, value, help_text, formatter) in metrics
     ]
-
+    
     # Sort metrics by numeric value ascending
     sorted_metrics = sorted(metric_objects, key=lambda x: x["value"])
-
+    
     # Create columns dynamically based on sorted metrics
     cols = st.columns(len(sorted_metrics))
-
+    
     for i, metric in enumerate(sorted_metrics):
         with cols[i]:
             st.metric(
@@ -184,11 +201,11 @@ def display_kpis(filtered_data):
                 value=metric["formatter"](metric["value"]),
                 help=metric["help"]
             )
-
+    
     # Add completion breakdown pie charts
     st.subheader("📈 Completion Breakdown")
     col1, col2 = st.columns(2)
-
+    
     with col1:
         if total_planned > 0:
             labels = ['Completed', 'Not Completed']
@@ -208,7 +225,7 @@ def display_kpis(filtered_data):
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.warning("No planned orders available for selected filters.")
-
+    
     with col2:
         if total_orders > 0:
             labels = ['Completed', 'Not Completed']
@@ -232,19 +249,19 @@ def display_kpis(filtered_data):
 def plot_order_status_distribution(filtered_data):
     """Visualize order status distribution with planned/unplanned breakdown"""
     st.subheader("📊 Order Status Distribution (Planned vs Unplanned)")
-
+    
     # Create planned/unplanned categorization
     filtered_data['Plan Type'] = np.where(
         filtered_data['Maintenance Plan'].notna(),
         'Planned',
         'Unplanned'
     )
-
+    
     # Create grouped status counts
     status_counts = filtered_data.groupby(
         ['Order Status', 'Plan Type']
     ).size().reset_index(name='Count')
-
+    
     fig = px.bar(
         status_counts,
         x='Order Status',
@@ -258,12 +275,12 @@ def plot_order_status_distribution(filtered_data):
             'Unplanned': '#EF553B'
         }
     )
-
+    
     fig.update_traces(
         texttemplate='%{text:,}',
         textposition='outside'
     )
-
+    
     fig.update_layout(
         xaxis_title="Order Status",
         yaxis_title="Number of Orders",
@@ -275,53 +292,101 @@ def plot_order_status_distribution(filtered_data):
             y=1.02,
             xanchor="right",
             x=1 ))
-
+    
     st.plotly_chart(fig, use_container_width=True)
+    
+        # Create grouped status counts
+    status_counts = filtered_data.groupby(
+        ['Order Status','Plant']
+    ).size().reset_index(name='Count')
+    
+    fig1 = px.bar(
+        status_counts,
+        x='Plant',
+        y='Count',
+        color='Order Status',
+        barmode='group',
+        text='Count',
+        title="Orders by Status with Plant Breakdown")
+    
+    
+    fig1.update_traces(
+        texttemplate='%{text:,}',
+        textposition='outside'
+    )
+    
+    fig1.update_layout(
+        xaxis_title="PLant",
+        yaxis_title="Number of Orders",
+        legend_title="Plant",
+        uniformtext_minsize=10,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1 ))
+    
+    st.plotly_chart(fig1, use_container_width=True)
 
 def plot_department_orders(filtered_data):
-    """Visualize department-wise order counts"""
+    """Visualize department-wise order counts by order status"""
+
     st.subheader("🏗️ Department-wise Order Distribution")
 
-    department_counts = filtered_data['Main Work Center'].value_counts().reset_index()
-    department_counts.columns = ['Department', 'Count']
+    # Correct aggregation
+    department_counts = (
+        filtered_data
+        .groupby(['Main Work Center', 'Order Status'])
+        .size()
+        .reset_index(name='Count')
+    )
+
+    department_counts.rename(
+        columns={'Main Work Center': 'Department'},
+        inplace=True
+    )
 
     fig = px.bar(
         department_counts,
         x='Department',
         y='Count',
-        color='Department',
+        color='Order Status',
         text='Count',
         title="Orders by Department"
     )
+
     fig.update_traces(texttemplate='%{text:,}', textposition='outside')
     fig.update_layout(
         xaxis_title="Department",
         yaxis_title="Number of Orders",
-        showlegend=False
+        legend_title="Order Status"
     )
+
     st.plotly_chart(fig, use_container_width=True)
+
 
 def plot_status_trends(filtered_data):
     """Visualize order status trends with proper month order"""
     st.subheader("📈 Status Trends Over Time")
-
+    
     # Create temporal aggregation
     trend_data = filtered_data.groupby(
         ['Year', 'Month', 'Order Status']
     ).size().reset_index(name='Count')
-
+    
     # Define correct month order
     month_order = ['January', 'February', 'March', 'April', 'May', 'June',
                    'July', 'August', 'September', 'October', 'November', 'December']
-
+    
     # Convert to categorical for proper sorting
     trend_data['Month'] = pd.Categorical(trend_data['Month'], 
                                        categories=month_order, 
                                        ordered=True)
-
+    
     # Sort data chronologically
     trend_data = trend_data.sort_values(['Year', 'Month'])
-
+    
     fig = px.line(
         trend_data,
         x='Month',
@@ -332,12 +397,12 @@ def plot_status_trends(filtered_data):
         title="Monthly Order Status Trends",
         category_orders={"Month": month_order}
     )
-
+    
     # Ensure proper x-axis ordering
     fig.update_xaxes(type='category', categoryorder='array', categoryarray=month_order)
-
+    
     st.plotly_chart(fig, use_container_width=True)
-
+    
     # Create temporal aggregation
     trend_data2 = filtered_data.groupby(
         ['Year', 'Month', 'Order Status', 'Plan Type']
@@ -358,15 +423,15 @@ def plot_status_trends(filtered_data):
 def plot_order_type_analysis(filtered_data):
     """Visualize order type analysis"""
     st.subheader("📦 Order Type Analysis")
-
+    
     # Create two columns for charts
     col1, col2 = st.columns(2)
-
+    
     with col1:
         # Order Type Distribution
         type_dist = filtered_data['Order Type'].value_counts().reset_index()
         type_dist.columns = ['Order Type', 'Count']
-
+        
         fig = px.pie(
             type_dist,
             names='Order Type',
@@ -375,20 +440,20 @@ def plot_order_type_analysis(filtered_data):
         )
         fig.update_traces(textposition='inside', textinfo='percent')
         st.plotly_chart(fig)
-
+    
     with col2:
         # Order Type Trends Over Time
         trend_data = filtered_data.groupby(
             ['Year', 'Month', 'Order Type']
         ).size().reset_index(name='Count')
-
+        
         month_order = ['January', 'February', 'March', 'April', 'May', 'June',
                        'July', 'August', 'September', 'October', 'November', 'December']
         trend_data['Month'] = pd.Categorical(trend_data['Month'], 
                                            categories=month_order, 
                                            ordered=False)
         trend_data = trend_data.sort_values(['Year', 'Month'])
-
+        
         fig = px.line(
             trend_data,
             x='Month',
@@ -399,7 +464,7 @@ def plot_order_type_analysis(filtered_data):
             title="Monthly Order Type Trends"
         )
         st.plotly_chart(fig, use_container_width=True)
-
+    
     # Order Type vs Cost Analysis
     st.subheader("💸 Order Type Cost Analysis")
     cost_data = filtered_data.groupby('Order Type').agg({
@@ -407,7 +472,7 @@ def plot_order_type_analysis(filtered_data):
         'Total sum (actual)': 'mean',
         'Cost Deviation': 'mean'
     }).reset_index()
-
+    
     fig = px.bar(
         cost_data,
         x='Order Type',
@@ -421,7 +486,7 @@ def plot_order_type_analysis(filtered_data):
 def plot_cost_analysis(filtered_data):
     """Visualize cost-related metrics with proper sorting"""
     st.subheader("💵 Cost Analysis (Ascending Order)")
-
+    
     cols = st.columns(2)
     with cols[0]:
         # Top cost savings
@@ -441,7 +506,7 @@ def plot_cost_analysis(filtered_data):
             yaxis_title="Cost Deviation"
         )
         st.plotly_chart(fig, use_container_width=True)
-
+    
     with cols[1]:
         # Cost variance distribution
         fig = px.box(
@@ -468,56 +533,72 @@ def show_raw_data(filtered_data):
         height=400
     )
 
+    # Export to Excel
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        filtered_data.to_excel(writer, index=False, sheet_name='Filtered Data')
+    buffer.seek(0)
+
+    st.download_button(
+        label="📥 Download Raw Data as Excel",
+        data=buffer,
+        file_name="filtered_maintenance_data.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        key="download_excel"
+    )
+
 def main():
     """Main application flow"""
     st.title("🏭 Maintenance Operations Analytics Dashboard")
-
+    
     # Data loading and processing
     uploaded_file = st.file_uploader(
         "📤 Upload maintenance data (Excel)", 
         type=["xlsx"]
     )
-
+    
     with st.spinner("🔄 Loading and processing data..."):
         data = load_data(uploaded_file)
         processed_data = process_data(data)
-
+    
     if processed_data.empty:
         st.warning("⚠️ No data loaded! Please upload a valid file.")
         return
-
+    
     # Create filters and filter data
-    plants, years, months, statuses, work_center, Order_type = create_filters(processed_data)
-
+    plants, years, months, statuses, work_center, Order_type ,Group,Plan_Type= create_filters(processed_data)
+    
     filtered_data = processed_data[
         (processed_data['Plant'].isin(plants)) &
         (processed_data['Year'].between(years[0], years[1])) &
         (processed_data['Month'].isin(months)) &
         (processed_data['Order Status'].isin(statuses)) &
         (processed_data['Main Work Center'].isin(work_center))&
-        (processed_data['Order Type'].isin(Order_type))
+        (processed_data['Order Type'].isin(Order_type))&
+        (processed_data['Group'].isin(Group))&
+        (processed_data['Plan Type'].isin(Plan_Type))
     ]
-
+    
     # Dashboard layout
     display_filter_summary(filtered_data)
     st.divider()
-
+    
     display_kpis(filtered_data)
     st.divider()
-
+    
     plot_order_status_distribution(filtered_data)
     st.divider()
-
+    
     plot_department_orders(filtered_data)
     st.divider()
-
+    
     plot_status_trends(filtered_data)
     plot_order_type_analysis(filtered_data)
     st.divider()
-
+    
     plot_cost_analysis(filtered_data)
     st.divider()
-
+    
     show_raw_data(filtered_data)
 
 if __name__ == "__main__":
