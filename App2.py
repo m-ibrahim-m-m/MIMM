@@ -327,14 +327,14 @@ def plot_completion_donuts(fd):
         if total_p:
             st.plotly_chart(donut([comp_p, total_p-comp_p], ['Completed','Remaining'],
                                   "Planned Orders Completion", COLORS["success"]),
-                            use_container_width=True)
+                            width="stretch")
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
         if total_o:
             st.plotly_chart(donut([comp_o, total_o-comp_o], ['Completed','Remaining'],
                                   "Overall Orders Completion", COLORS["accent"]),
-                            use_container_width=True)
+                            width="stretch")
         st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -348,7 +348,7 @@ def plot_status_distribution(fd):
                      color_discrete_map={'Planned': COLORS["planned"], 'Unplanned': COLORS["unplanned"]})
         fig.update_traces(texttemplate='%{text:,}', textposition='outside', marker_line_width=0, opacity=0.9)
         apply_layout(fig, legend=dict(orientation="h", y=1.08))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
@@ -357,7 +357,7 @@ def plot_status_distribution(fd):
                       title="Status Split per Plant", color_discrete_map=STATUS_COLORS)
         fig2.update_traces(marker_line_width=0)
         apply_layout(fig2)
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
         st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -369,7 +369,7 @@ def plot_department_orders(fd):
                  title="Orders by Department", color_discrete_map=STATUS_COLORS)
     fig.update_traces(texttemplate='%{text:,}', textposition='outside', marker_line_width=0)
     apply_layout(fig)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
     st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -384,7 +384,7 @@ def plot_status_trends(fd):
     fig.update_traces(line_width=2.5, marker_size=6)
     fig.update_xaxes(categoryorder='array', categoryarray=MONTH_ORDER, tickangle=45, tickfont_size=10)
     apply_layout(fig)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
     st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -398,7 +398,7 @@ def plot_order_type_analysis(fd):
         fig.update_traces(textposition='inside', textinfo='percent+label',
                           marker=dict(line=dict(color='#0F1923', width=2)))
         apply_layout(fig)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
@@ -410,7 +410,7 @@ def plot_order_type_analysis(fd):
         fig.update_traces(line_width=2, marker_size=5)
         fig.update_xaxes(tickangle=45, tickfont_size=10)
         apply_layout(fig)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('<div class="chart-card">', unsafe_allow_html=True)
@@ -423,7 +423,7 @@ def plot_order_type_analysis(fd):
                 marker_color=COLORS["accent"], marker_line_width=0, opacity=0.85)
     apply_layout(fig)
     fig.update_layout(barmode='group', title_text="Avg Planned vs Actual Cost by Order Type")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
     st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -436,7 +436,7 @@ def plot_cost_analysis(fd):
                      title="Top 10 Cost Savings (by Order Type)", text_auto='.2s')
         fig.update_traces(marker_line_width=0)
         apply_layout(fig)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
@@ -446,7 +446,7 @@ def plot_cost_analysis(fd):
                                               COLORS["warning"], COLORS["success"]])
         fig.update_traces(line_width=1.5)
         apply_layout(fig)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -465,7 +465,7 @@ def show_raw_data(fd):
         unsafe_allow_html=True
     )
     st.dataframe(display_df.sort_values('Basic start date', ascending=False),
-                 use_container_width=True, height=380)
+                 width="stretch", height=380)
 
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
