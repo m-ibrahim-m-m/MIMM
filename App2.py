@@ -16,7 +16,7 @@ def load_data(uploaded_file=None):
     try:
         return pd.read_excel("D:/Dash Board/Maintenance Orders.xlsx")
     except FileNotFoundError:
-        st.error("❌ Default file not found at: D:/Dash Board/Maintenance Orders.xlsx")
+        st.error("❌ Default file not found")
         return pd.DataFrame()
 
 
