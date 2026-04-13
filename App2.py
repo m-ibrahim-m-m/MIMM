@@ -197,43 +197,113 @@ def process_data(data):
 
 
 # ========================= SIDEBAR =========================
+def safe_default(options, stored):
+    """Return only stored values that still exist in options. Falls back to all options."""
+    if stored is None:
+        return list(options)
+    valid = [v for v in stored if v in options]
+    return valid if valid else list(options)
+
+
 def create_filters(data):
     st.sidebar.markdown(
         "<div style='padding:0.5rem 0 1.2rem'>"
-        "<p style='color:#00C2CB;font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin:0 0 0.2rem'>Maintenance Dashboard</p>"
+        "<p style='color:#00C2CB;font-size:0.7rem;font-weight:700;letter-spacing:0.1em;"
+        "text-transform:uppercase;margin:0 0 0.2rem'>Maintenance Dashboard</p>"
         "<p style='color:#64748B;font-size:0.78rem;margin:0'>Filter & explore data</p></div>",
         unsafe_allow_html=True
     )
+
+    # ── All options always computed from the FULL dataset ──
+    all_plants       = sorted(data['Plant'].dropna().unique())
+    all_months       = sorted(data['Month'].dropna().unique(),
+                              key=lambda x: MONTH_ORDER.index(x) if x in MONTH_ORDER else 99)
+    all_plan_types   = sorted(data['Plan Type'].dropna().unique())
+    all_statuses     = sorted(data['Order Status'].dropna().unique())
+    all_order_types  = sorted(data['Order Type'].dropna().unique())
+    all_work_centers = sorted(data['Main Work Center'].dropna().unique())
+    all_groups       = sorted(data['Group'].dropna().unique())
+    year_min         = int(data['Year'].min())
+    year_max         = int(data['Year'].max())
+
+    # ── Initialise session_state keys on first load only ──
+    ss = st.session_state
+    if 'f_plants' not in ss:
+        ss.f_plants       = all_plants
+        ss.f_years        = (year_min, year_max)
+        ss.f_months       = all_months
+        ss.f_plan_type    = all_plan_types
+        ss.f_statuses     = all_statuses
+        ss.f_order_types  = all_order_types
+        ss.f_work_centers = all_work_centers
+        ss.f_groups       = all_groups
+
     with st.sidebar.expander("🏭  Plants", expanded=True):
-        plants = st.multiselect("Plants", options=sorted(data['Plant'].dropna().unique()),
-                                default=sorted(data['Plant'].dropna().unique())[:2],
-                                label_visibility="collapsed")
+        plants = st.multiselect(
+            "Plants", options=all_plants,
+            default=safe_default(all_plants, ss.f_plants),
+            key="f_plants", label_visibility="collapsed"
+        )
+
     with st.sidebar.expander("📅  Time Range", expanded=True):
-        years = st.slider("Years", min_value=int(data['Year'].min()),
-                          max_value=int(data['Year'].max()),
-                          value=(int(data['Year'].min()), int(data['Year'].max())),
-                          label_visibility="collapsed")
-        available_months = sorted(data['Month'].dropna().unique(),
-                                  key=lambda x: MONTH_ORDER.index(x) if x in MONTH_ORDER else 99)
-        months = st.multiselect("Months", options=available_months, default=available_months,
-                                label_visibility="collapsed")
+        stored_years = ss.f_years
+        safe_years = (
+            max(year_min, min(stored_years[0], year_max)),
+            max(year_min, min(stored_years[1], year_max)),
+        )
+        years = st.slider(
+            "Years", min_value=year_min, max_value=year_max,
+            value=safe_years, key="f_years", label_visibility="collapsed"
+        )
+        months = st.multiselect(
+            "Months", options=all_months,
+            default=safe_default(all_months, ss.f_months),
+            key="f_months", label_visibility="collapsed"
+        )
+
     with st.sidebar.expander("⚙️  Order Attributes", expanded=False):
-        plan_type   = st.multiselect("Plan Type", options=data['Plan Type'].unique(),
-                                     default=data['Plan Type'].unique())
-        statuses    = st.multiselect("Order Status", options=data['Order Status'].unique(),
-                                     default=data['Order Status'].unique())
-        order_types = st.multiselect("Work Order Type",
-                                     options=sorted(data['Order Type'].dropna().unique()),
-                                     default=sorted(data['Order Type'].dropna().unique()))
+        plan_type = st.multiselect(
+            "Plan Type", options=all_plan_types,
+            default=safe_default(all_plan_types, ss.f_plan_type),
+            key="f_plan_type"
+        )
+        statuses = st.multiselect(
+            "Order Status", options=all_statuses,
+            default=safe_default(all_statuses, ss.f_statuses),
+            key="f_statuses"
+        )
+        order_types = st.multiselect(
+            "Work Order Type", options=all_order_types,
+            default=safe_default(all_order_types, ss.f_order_types),
+            key="f_order_types"
+        )
+
     with st.sidebar.expander("🏗️  Department / Group", expanded=False):
-        work_centers = st.multiselect("Main Work Center",
-                                      options=sorted(data['Main Work Center'].dropna().unique()),
-                                      default=sorted(data['Main Work Center'].dropna().unique()))
-        groups = st.multiselect("Task List Code (Group)",
-                                options=sorted(data['Group'].dropna().unique()),
-                                default=sorted(data['Group'].dropna().unique()))
-    st.sidebar.markdown("<hr style='border-color:rgba(255,255,255,0.06);margin:1rem 0'>", unsafe_allow_html=True)
-    st.sidebar.markdown("<p style='color:#64748B;font-size:0.72rem;text-align:center'>Maintenance Analytics · v2.0</p>", unsafe_allow_html=True)
+        work_centers = st.multiselect(
+            "Main Work Center", options=all_work_centers,
+            default=safe_default(all_work_centers, ss.f_work_centers),
+            key="f_work_centers"
+        )
+        groups = st.multiselect(
+            "Task List Code (Group)", options=all_groups,
+            default=safe_default(all_groups, ss.f_groups),
+            key="f_groups"
+        )
+
+    # ── Reset button ──
+    st.sidebar.markdown("<hr style='border-color:rgba(255,255,255,0.06);margin:0.8rem 0'>",
+                        unsafe_allow_html=True)
+    if st.sidebar.button("↺  Reset All Filters", use_container_width=True):
+        for key in ['f_plants','f_years','f_months','f_plan_type',
+                    'f_statuses','f_order_types','f_work_centers','f_groups']:
+            del st.session_state[key]
+        st.rerun()
+
+    st.sidebar.markdown(
+        "<p style='color:#64748B;font-size:0.72rem;text-align:center;margin-top:0.5rem'>"
+        "Maintenance Analytics · v2.0</p>",
+        unsafe_allow_html=True
+    )
     return plants, years, months, plan_type, statuses, work_centers, order_types, groups
 
 
@@ -512,6 +582,20 @@ def main():
         st.stop()
 
     plants, years, months, plan_type, statuses, work_centers, order_types, groups = create_filters(data)
+
+    # Guard: if any multiselect is empty, show a warning instead of crashing
+    empty_filters = []
+    if not plants:       empty_filters.append("Plants")
+    if not months:       empty_filters.append("Months")
+    if not plan_type:    empty_filters.append("Plan Type")
+    if not statuses:     empty_filters.append("Order Status")
+    if not order_types:  empty_filters.append("Work Order Type")
+    if not work_centers: empty_filters.append("Main Work Center")
+    if not groups:       empty_filters.append("Task List Code (Group)")
+
+    if empty_filters:
+        st.warning(f"⚠️ Please select at least one value for: **{', '.join(empty_filters)}**")
+        st.stop()
 
     fd = data[
         (data['Plant'].isin(plants)) &
