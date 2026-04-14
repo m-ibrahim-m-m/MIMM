@@ -144,11 +144,18 @@ MONTH_ORDER = ['January','February','March','April','May','June',
 # ========================= DATA =========================
 def load_data(uploaded_file=None):
     if uploaded_file is not None:
-        return pd.read_excel(uploaded_file)
+        try:
+            return pd.read_excel(uploaded_file)
+        except Exception as e:
+            st.error(f"❌ Error reading uploaded file: {e}")
+            return pd.DataFrame()
     try:
         return pd.read_excel("D:/Dash Board/Maintenance Orders.xlsx")
     except FileNotFoundError:
         st.error("❌ Default file not found. Please upload an Excel file above.")
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"❌ Error loading default file: {e}")
         return pd.DataFrame()
 
 def process_data(data):
@@ -172,9 +179,9 @@ def process_data(data):
                 return name
         return 'Open'
     data['Order Status'] = data.apply(determine_status, axis=1)
-    data['Cost Deviation'] = data['Total sum (actual)'] - data['Total planned costs']
+    data['Cost Deviation'] = data.get('Total sum (actual)', 0) - data.get('Total planned costs', 0)
     data['Cost Variance %'] = data['Cost Deviation'] / data['Total planned costs'].replace(0, np.nan) * 100
-    data['Plan Type'] = np.where(data['Maintenance Plan'].notna(), 'Planned', 'Unplanned')
+    data['Plan Type'] = np.where(data.get('Maintenance Plan', pd.Series()).notna(), 'Planned', 'Unplanned')
     return data
 
 # ========================= SIDEBAR =========================
@@ -186,16 +193,18 @@ def create_filters(data):
         "<p style='color:#64748B;font-size:0.78rem;margin:0'>Filter & explore data</p></div>",
         unsafe_allow_html=True
     )
-    all_plants = sorted(data['Plant'].dropna().unique())
+    all_plants = sorted(data['Plant'].dropna().unique()) if 'Plant' in data.columns else []
     all_months = sorted(data['Month'].dropna().unique(),
-                              key=lambda x: MONTH_ORDER.index(x) if x in MONTH_ORDER else 99)
-    all_plan_types = sorted(data['Plan Type'].dropna().unique())
-    all_statuses = sorted(data['Order Status'].dropna().unique())
-    all_order_types = sorted(data['Order Type'].dropna().unique())
-    all_work_centers = sorted(data['Main Work Center'].dropna().unique())
-    all_groups = sorted(data['Group'].dropna().unique())
-    year_min = int(data['Year'].min())
-    year_max = int(data['Year'].max())
+                        key=lambda x: MONTH_ORDER.index(x) if x in MONTH_ORDER else 99)
+    all_plan_types = sorted(data['Plan Type'].dropna().unique()) if 'Plan Type' in data.columns else []
+    all_statuses = sorted(data['Order Status'].dropna().unique()) if 'Order Status' in data.columns else []
+    all_order_types = sorted(data['Order Type'].dropna().unique()) if 'Order Type' in data.columns else []
+    all_work_centers = sorted(data['Main Work Center'].dropna().unique()) if 'Main Work Center' in data.columns else []
+    all_groups = sorted(data['Group'].dropna().unique()) if 'Group' in data.columns else []
+    
+    year_min = int(data['Year'].min()) if 'Year' in data.columns and not data['Year'].empty else 2020
+    year_max = int(data['Year'].max()) if 'Year' in data.columns and not data['Year'].empty else 2026
+
     ss = st.session_state
 
     def init(key, value):
@@ -211,69 +220,32 @@ def create_filters(data):
     init("f_groups", all_groups)
 
     def sanitise(key, options):
-        valid = [v for v in ss[key] if v in options]
+        valid = [v for v in ss.get(key, []) if v in options]
         ss[key] = valid if valid else list(options)
-    sanitise("f_plants", all_plants)
-    sanitise("f_months", all_months)
-    sanitise("f_plan_type", all_plan_types)
-    sanitise("f_statuses", all_statuses)
-    sanitise("f_order_types", all_order_types)
-    sanitise("f_work_centers", all_work_centers)
-    sanitise("f_groups", all_groups)
 
-    sy = ss["f_years"]
-    ss["f_years"] = (
-        max(year_min, min(int(sy[0]), year_max)),
-        max(year_min, min(int(sy[1]), year_max)),
-    )
+    for k in ["f_plants","f_months","f_plan_type","f_statuses","f_order_types","f_work_centers","f_groups"]:
+        sanitise(k, locals()[k.replace("f_","all_")])
 
     with st.sidebar.expander("🏭 Plants", expanded=True):
-        plants = st.multiselect(
-            "Plants", options=all_plants,
-            key="f_plants", label_visibility="collapsed"
-        )
+        plants = st.multiselect("Plants", options=all_plants, key="f_plants", label_visibility="collapsed")
     with st.sidebar.expander("📅 Time Range", expanded=True):
-        years = st.slider(
-            "Years", min_value=year_min, max_value=year_max,
-            key="f_years", label_visibility="collapsed"
-        )
-        months = st.multiselect(
-            "Months", options=all_months,
-            key="f_months", label_visibility="collapsed"
-        )
+        years = st.slider("Years", min_value=year_min, max_value=year_max, key="f_years", label_visibility="collapsed")
+        months = st.multiselect("Months", options=all_months, key="f_months", label_visibility="collapsed")
     with st.sidebar.expander("⚙️ Order Attributes", expanded=False):
-        plan_type = st.multiselect(
-            "Plan Type", options=all_plan_types, key="f_plan_type"
-        )
-        statuses = st.multiselect(
-            "Order Status", options=all_statuses, key="f_statuses"
-        )
-        order_types = st.multiselect(
-            "Work Order Type", options=all_order_types, key="f_order_types"
-        )
+        plan_type = st.multiselect("Plan Type", options=all_plan_types, key="f_plan_type")
+        statuses = st.multiselect("Order Status", options=all_statuses, key="f_statuses")
+        order_types = st.multiselect("Work Order Type", options=all_order_types, key="f_order_types")
     with st.sidebar.expander("🏗️ Department / Group", expanded=False):
-        work_centers = st.multiselect(
-            "Main Work Center", options=all_work_centers, key="f_work_centers"
-        )
-        groups = st.multiselect(
-            "Task List Code (Group)", options=all_groups, key="f_groups"
-        )
+        work_centers = st.multiselect("Main Work Center", options=all_work_centers, key="f_work_centers")
+        groups = st.multiselect("Task List Code (Group)", options=all_groups, key="f_groups")
 
-    st.sidebar.markdown(
-        "<hr style='border-color:rgba(255,255,255,0.06);margin:0.8rem 0'>",
-        unsafe_allow_html=True
-    )
+    st.sidebar.markdown("<hr style='border-color:rgba(255,255,255,0.06);margin:0.8rem 0'>", unsafe_allow_html=True)
     if st.sidebar.button("↺ Reset All Filters", use_container_width=True):
-        for key in ["f_plants","f_years","f_months","f_plan_type",
-                    "f_statuses","f_order_types","f_work_centers","f_groups"]:
-            if key in st.session_state:
-                del st.session_state[key]
+        for key in list(ss.keys()):
+            if key.startswith("f_"):
+                del ss[key]
         st.rerun()
-    st.sidebar.markdown(
-        "<p style='color:#64748B;font-size:0.72rem;text-align:center;margin-top:0.5rem'>"
-        "Maintenance Analytics · v2.0</p>",
-        unsafe_allow_html=True
-    )
+
     return plants, years, months, plan_type, statuses, work_centers, order_types, groups
 
 # ========================= HELPERS =========================
@@ -287,6 +259,9 @@ def section_header(icon, title, badge=None):
 
 # ========================= KPIs =========================
 def display_kpis(fd):
+    if fd.empty:
+        st.warning("No data to display KPIs")
+        return
     planned = fd[fd['Plan Type'] == 'Planned']
     total_p = len(planned)
     comp_p = len(planned[planned['Order Status'] == 'Completed'])
@@ -294,8 +269,9 @@ def display_kpis(fd):
     total_o = len(fd)
     comp_o = len(fd[fd['Order Status'] == 'Completed'])
     pct_o = comp_o / total_o * 100 if total_o else 0
-    act_cost = fd['Total sum (actual)'].sum()
-    avg_dev = fd['Cost Deviation'].mean()
+    act_cost = fd.get('Total sum (actual)', pd.Series(0)).sum()
+    avg_dev = fd['Cost Deviation'].mean() if 'Cost Deviation' in fd.columns else 0
+
     kpis = [
         ("Total Orders", f"{total_o:,}", COLORS["accent"]),
         ("Planned Orders", f"{total_p:,}", COLORS["planned"]),
@@ -316,7 +292,7 @@ def display_kpis(fd):
 
 # ========================= FILTER SUMMARY =========================
 def display_filter_summary(fd, years, months):
-    plants_str = " ".join(f'<span class="filter-pill">{p}</span>' for p in sorted(fd['Plant'].unique()))
+    plants_str = " ".join(f'<span class="filter-pill">{p}</span>' for p in sorted(fd['Plant'].unique())) if 'Plant' in fd.columns else ""
     months_preview = ", ".join(months[:3]) + (" ..." if len(months) > 3 else "")
     st.markdown(
         f'<div style="background:#1A2635;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:1rem 1.4rem;margin-bottom:0.5rem;">'
@@ -331,50 +307,39 @@ def display_filter_summary(fd, years, months):
 
 # ========================= CHARTS =========================
 def plot_completion_donuts(fd):
-    planned = fd[fd['Plan Type'] == 'Planned']
-    total_p = len(planned); comp_p = len(planned[planned['Order Status'] == 'Completed'])
-    total_o = len(fd); comp_o = len(fd[fd['Order Status'] == 'Completed'])
+    planned = fd[fd['Plan Type'] == 'Planned'] if 'Plan Type' in fd.columns else pd.DataFrame()
+    total_p = len(planned)
+    comp_p = len(planned[planned['Order Status'] == 'Completed']) if not planned.empty else 0
+    total_o = len(fd)
+    comp_o = len(fd[fd['Order Status'] == 'Completed']) if 'Order Status' in fd.columns else 0
+
     def donut(vals, labels, title, hit_color):
-        fig = go.Figure(go.Pie(
-            values=vals, labels=labels, hole=0.62,
-            marker_colors=[hit_color, "rgba(255,255,255,0.06)"],
-            textinfo='none',
-            hovertemplate='%{label}: %{value:,} (%{percent})<extra></extra>'
-        ))
+        fig = go.Figure(go.Pie(values=vals, labels=labels, hole=0.62,
+                              marker_colors=[hit_color, "rgba(255,255,255,0.06)"],
+                              textinfo='none', hovertemplate='%{label}: %{value:,} (%{percent})<extra></extra>'))
         pct = vals[0] / sum(vals) * 100 if sum(vals) else 0
-        fig.add_annotation(text=f"<b>{pct:.1f}%</b>", x=0.5, y=0.55,
-                           font=dict(size=22, color="#E2E8F0", family="IBM Plex Mono"), showarrow=False)
-        fig.add_annotation(text="complete", x=0.5, y=0.38,
-                           font=dict(size=11, color="#64748B"), showarrow=False)
-        fig.update_layout(
-            title_text=title, showlegend=True,
-            legend=dict(orientation="h", y=-0.12, x=0.5, xanchor="center",
-                        bgcolor="rgba(0,0,0,0)", bordercolor="rgba(255,255,255,0.08)", borderwidth=1),
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="'IBM Plex Sans', sans-serif", color="#E2E8F0", size=12),
-            margin=dict(l=16, r=16, t=48, b=16),
-        )
+        fig.add_annotation(text=f"<b>{pct:.1f}%</b>", x=0.5, y=0.55, font=dict(size=22, color="#E2E8F0", family="IBM Plex Mono"), showarrow=False)
+        fig.add_annotation(text="complete", x=0.5, y=0.38, font=dict(size=11, color="#64748B"), showarrow=False)
+        fig.update_layout(title_text=title, showlegend=True, legend=dict(orientation="h", y=-0.12, x=0.5, xanchor="center"))
         return fig
+
     col1, col2 = st.columns(2)
     with col1:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        if total_p:
-            st.plotly_chart(donut([comp_p, total_p-comp_p], ['Completed','Remaining'],
-                                  "Planned Orders Completion", COLORS["success"]), width='stretch')
+        if total_p > 0:
+            st.plotly_chart(donut([comp_p, total_p-comp_p], ['Completed','Remaining'], "Planned Orders Completion", COLORS["success"]), width='stretch')
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        if total_o:
-            st.plotly_chart(donut([comp_o, total_o-comp_o], ['Completed','Remaining'],
-                                  "Overall Orders Completion", COLORS["accent"]), width='stretch')
+        if total_o > 0:
+            st.plotly_chart(donut([comp_o, total_o-comp_o], ['Completed','Remaining'], "Overall Orders Completion", COLORS["accent"]), width='stretch')
         st.markdown('</div>', unsafe_allow_html=True)
 
 def plot_status_distribution(fd):
     col1, col2 = st.columns([3, 2])
     with col1:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        sc = fd.groupby(['Order Status','Plan Type'], observed=True).size().reset_index(name='Count')
+        sc = fd.groupby(['Order Status','Plan Type'], observed=True).size().reset_index(name='Count') if not fd.empty else pd.DataFrame()
         fig = px.bar(sc, x='Order Status', y='Count', color='Plan Type', barmode='group', text='Count',
                      title="Orders by Status — Planned vs Unplanned",
                      color_discrete_map={'Planned': COLORS["planned"], 'Unplanned': COLORS["unplanned"]})
@@ -384,7 +349,7 @@ def plot_status_distribution(fd):
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        ps = fd.groupby(['Plant','Order Status'], observed=True).size().reset_index(name='Count')
+        ps = fd.groupby(['Plant','Order Status'], observed=True).size().reset_index(name='Count') if not fd.empty else pd.DataFrame()
         fig2 = px.bar(ps, x='Plant', y='Count', color='Order Status', barmode='stack',
                       title="Status Split per Plant", color_discrete_map=STATUS_COLORS)
         fig2.update_traces(marker_line_width=0)
@@ -394,7 +359,7 @@ def plot_status_distribution(fd):
 
 def plot_department_orders(fd):
     st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-    dc = fd.groupby(['Main Work Center','Order Status'], observed=True).size().reset_index(name='Count')
+    dc = fd.groupby(['Main Work Center','Order Status'], observed=True).size().reset_index(name='Count') if not fd.empty else pd.DataFrame()
     dc.rename(columns={'Main Work Center':'Department'}, inplace=True)
     fig = px.bar(dc, x='Department', y='Count', color='Order Status', text='Count',
                  title="Orders by Department", color_discrete_map=STATUS_COLORS)
@@ -405,7 +370,7 @@ def plot_department_orders(fd):
 
 def plot_status_trends(fd):
     st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-    td = fd.groupby(['Year','Month','Order Status'], observed=True).size().reset_index(name='Count')
+    td = fd.groupby(['Year','Month','Order Status'], observed=True).size().reset_index(name='Count') if not fd.empty else pd.DataFrame()
     td['Month'] = pd.Categorical(td['Month'], categories=MONTH_ORDER, ordered=True)
     td = td.sort_values(['Year','Month'])
     fig = px.line(td, x='Month', y='Count', color='Order Status', facet_col='Year',
@@ -421,17 +386,16 @@ def plot_order_type_analysis(fd):
     col1, col2 = st.columns([2, 3])
     with col1:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        td = fd['Order Type'].value_counts().reset_index()
+        td = fd['Order Type'].value_counts().reset_index() if 'Order Type' in fd.columns else pd.DataFrame()
         td.columns = ['Order Type','Count']
         fig = px.pie(td, names='Order Type', values='Count', title="Order Type Distribution", hole=0.5)
-        fig.update_traces(textposition='inside', textinfo='percent+label',
-                          marker=dict(line=dict(color='#0F1923', width=2)))
+        fig.update_traces(textposition='inside', textinfo='percent+label', marker=dict(line=dict(color='#0F1923', width=2)))
         apply_layout(fig)
         st.plotly_chart(fig, width='stretch')
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        trd = fd.groupby(['Year','Month','Order Type'], observed=True).size().reset_index(name='Count')
+        trd = fd.groupby(['Year','Month','Order Type'], observed=True).size().reset_index(name='Count') if not fd.empty else pd.DataFrame()
         trd['Month'] = pd.Categorical(trd['Month'], categories=MONTH_ORDER, ordered=True)
         trd = trd.sort_values(['Year','Month'])
         fig = px.line(trd, x='Month', y='Count', color='Order Type', facet_col='Year',
@@ -443,12 +407,10 @@ def plot_order_type_analysis(fd):
         st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('<div class="chart-card">', unsafe_allow_html=True)
     cd = fd.groupby('Order Type', observed=True).agg(
-        Planned=('Total planned costs','mean'), Actual=('Total sum (actual)','mean')).reset_index()
+        Planned=('Total planned costs','mean'), Actual=('Total sum (actual)','mean')).reset_index() if not fd.empty else pd.DataFrame()
     fig = go.Figure()
-    fig.add_bar(x=cd['Order Type'], y=cd['Planned'], name='Planned',
-                marker_color=COLORS["planned"], marker_line_width=0, opacity=0.85)
-    fig.add_bar(x=cd['Order Type'], y=cd['Actual'], name='Actual',
-                marker_color=COLORS["accent"], marker_line_width=0, opacity=0.85)
+    fig.add_bar(x=cd['Order Type'], y=cd['Planned'], name='Planned', marker_color=COLORS["planned"], marker_line_width=0, opacity=0.85)
+    fig.add_bar(x=cd['Order Type'], y=cd['Actual'], name='Actual', marker_color=COLORS["accent"], marker_line_width=0, opacity=0.85)
     apply_layout(fig)
     fig.update_layout(barmode='group', title_text="Avg Planned vs Actual Cost by Order Type")
     st.plotly_chart(fig, width='stretch')
@@ -458,7 +420,7 @@ def plot_cost_analysis(fd):
     col1, col2 = st.columns(2)
     with col1:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        dev_data = fd.nsmallest(10, 'Cost Deviation')
+        dev_data = fd.nsmallest(10, 'Cost Deviation') if 'Cost Deviation' in fd.columns else pd.DataFrame()
         fig = px.bar(dev_data, x='Order Type', y='Cost Deviation', color='Plant',
                      title="Top 10 Cost Savings (by Order Type)", text_auto='.2s')
         fig.update_traces(marker_line_width=0)
@@ -469,8 +431,7 @@ def plot_cost_analysis(fd):
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
         fig = px.box(fd, x='Order Status', y='Cost Variance %', color='Plant',
                      title="Cost Variance % Distribution by Status",
-                     color_discrete_sequence=[COLORS["accent"], COLORS["planned"],
-                                              COLORS["warning"], COLORS["success"]])
+                     color_discrete_sequence=[COLORS["accent"], COLORS["planned"], COLORS["warning"], COLORS["success"]])
         fig.update_traces(line_width=1.5)
         apply_layout(fig)
         st.plotly_chart(fig, width='stretch')
@@ -479,7 +440,7 @@ def plot_cost_analysis(fd):
 def show_raw_data(fd):
     st.markdown('<div class="chart-card">', unsafe_allow_html=True)
     search = st.text_input("🔎 Search within data", placeholder="Type to filter any column…")
-    if search:
+    if search and not fd.empty:
         mask = fd.apply(lambda col: col.astype(str).str.contains(search, case=False, na=False))
         display_df = fd[mask.any(axis=1)]
     else:
@@ -490,9 +451,9 @@ def show_raw_data(fd):
         f"<b style='color:#E2E8F0'>{len(fd):,}</b> records</p>",
         unsafe_allow_html=True
     )
-    sort_col = 'Basic start date' if 'Basic start date' in display_df.columns else display_df.columns[0]
-    st.dataframe(display_df.sort_values(sort_col, ascending=False),
-                 use_container_width=True, height=380)
+    sort_col = 'Basic start date' if 'Basic start date' in display_df.columns else display_df.columns[0] if not display_df.empty else None
+    if sort_col:
+        st.dataframe(display_df.sort_values(sort_col, ascending=False), use_container_width=True, height=380)
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
         fd.to_excel(writer, index=False, sheet_name='Filtered Data')
@@ -514,11 +475,13 @@ def main():
         '</div>',
         unsafe_allow_html=True
     )
-    uploaded_file = st.file_uploader("Upload maintenance data (Excel .xlsx)",
-                                     type=["xlsx"], label_visibility="collapsed")
+
+    uploaded_file = st.file_uploader("Upload maintenance data (Excel .xlsx)", type=["xlsx"], label_visibility="collapsed")
+
     with st.spinner("Loading and processing data…"):
         raw_data = load_data(uploaded_file)
         data = process_data(raw_data)
+
     if data.empty:
         st.warning("⚠️ No data available. Please upload an Excel file.")
         st.stop()
