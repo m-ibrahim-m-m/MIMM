@@ -197,14 +197,6 @@ def process_data(data):
 
 
 # ========================= SIDEBAR =========================
-def safe_default(options, stored):
-    """Return only stored values that still exist in options. Falls back to all options."""
-    if stored is None:
-        return list(options)
-    valid = [v for v in stored if v in options]
-    return valid if valid else list(options)
-
-
 def create_filters(data):
     st.sidebar.markdown(
         "<div style='padding:0.5rem 0 1.2rem'>"
@@ -214,7 +206,7 @@ def create_filters(data):
         unsafe_allow_html=True
     )
 
-    # ── All options always computed from the FULL dataset ──
+    # ── All options always from the FULL unfiltered dataset ──
     all_plants       = sorted(data['Plant'].dropna().unique())
     all_months       = sorted(data['Month'].dropna().unique(),
                               key=lambda x: MONTH_ORDER.index(x) if x in MONTH_ORDER else 99)
@@ -226,77 +218,92 @@ def create_filters(data):
     year_min         = int(data['Year'].min())
     year_max         = int(data['Year'].max())
 
-    # ── Initialise session_state keys on first load only ──
     ss = st.session_state
-    if 'f_plants' not in ss:
-        ss.f_plants       = all_plants
-        ss.f_years        = (year_min, year_max)
-        ss.f_months       = all_months
-        ss.f_plan_type    = all_plan_types
-        ss.f_statuses     = all_statuses
-        ss.f_order_types  = all_order_types
-        ss.f_work_centers = all_work_centers
-        ss.f_groups       = all_groups
 
+    # ── Set defaults ONLY on very first load (key absent from ss) ──
+    # Rule: never pass both `default=` and `key=` to a widget.
+    # Instead, pre-populate ss before the widget is created so the
+    # widget reads its value purely from ss on every subsequent run.
+    def init(key, value):
+        if key not in ss:
+            ss[key] = value
+
+    init("f_plants",       all_plants)
+    init("f_years",        (year_min, year_max))
+    init("f_months",       all_months)
+    init("f_plan_type",    all_plan_types)
+    init("f_statuses",     all_statuses)
+    init("f_order_types",  all_order_types)
+    init("f_work_centers", all_work_centers)
+    init("f_groups",       all_groups)
+
+    # ── Sanitise stored values so they only contain valid options ──
+    # (handles the case where the dataset changes after first load)
+    def sanitise(key, options):
+        valid = [v for v in ss[key] if v in options]
+        ss[key] = valid if valid else list(options)
+
+    sanitise("f_plants",       all_plants)
+    sanitise("f_months",       all_months)
+    sanitise("f_plan_type",    all_plan_types)
+    sanitise("f_statuses",     all_statuses)
+    sanitise("f_order_types",  all_order_types)
+    sanitise("f_work_centers", all_work_centers)
+    sanitise("f_groups",       all_groups)
+
+    # Clamp year slider
+    sy = ss["f_years"]
+    ss["f_years"] = (
+        max(year_min, min(int(sy[0]), year_max)),
+        max(year_min, min(int(sy[1]), year_max)),
+    )
+
+    # ── Render widgets — NO `default=` argument anywhere ──
     with st.sidebar.expander("🏭  Plants", expanded=True):
         plants = st.multiselect(
             "Plants", options=all_plants,
-            default=safe_default(all_plants, ss.f_plants),
             key="f_plants", label_visibility="collapsed"
         )
 
     with st.sidebar.expander("📅  Time Range", expanded=True):
-        stored_years = ss.f_years
-        safe_years = (
-            max(year_min, min(stored_years[0], year_max)),
-            max(year_min, min(stored_years[1], year_max)),
-        )
         years = st.slider(
             "Years", min_value=year_min, max_value=year_max,
-            value=safe_years, key="f_years", label_visibility="collapsed"
+            key="f_years", label_visibility="collapsed"
         )
         months = st.multiselect(
             "Months", options=all_months,
-            default=safe_default(all_months, ss.f_months),
             key="f_months", label_visibility="collapsed"
         )
 
     with st.sidebar.expander("⚙️  Order Attributes", expanded=False):
         plan_type = st.multiselect(
-            "Plan Type", options=all_plan_types,
-            default=safe_default(all_plan_types, ss.f_plan_type),
-            key="f_plan_type"
+            "Plan Type", options=all_plan_types, key="f_plan_type"
         )
         statuses = st.multiselect(
-            "Order Status", options=all_statuses,
-            default=safe_default(all_statuses, ss.f_statuses),
-            key="f_statuses"
+            "Order Status", options=all_statuses, key="f_statuses"
         )
         order_types = st.multiselect(
-            "Work Order Type", options=all_order_types,
-            default=safe_default(all_order_types, ss.f_order_types),
-            key="f_order_types"
+            "Work Order Type", options=all_order_types, key="f_order_types"
         )
 
     with st.sidebar.expander("🏗️  Department / Group", expanded=False):
         work_centers = st.multiselect(
-            "Main Work Center", options=all_work_centers,
-            default=safe_default(all_work_centers, ss.f_work_centers),
-            key="f_work_centers"
+            "Main Work Center", options=all_work_centers, key="f_work_centers"
         )
         groups = st.multiselect(
-            "Task List Code (Group)", options=all_groups,
-            default=safe_default(all_groups, ss.f_groups),
-            key="f_groups"
+            "Task List Code (Group)", options=all_groups, key="f_groups"
         )
 
     # ── Reset button ──
-    st.sidebar.markdown("<hr style='border-color:rgba(255,255,255,0.06);margin:0.8rem 0'>",
-                        unsafe_allow_html=True)
+    st.sidebar.markdown(
+        "<hr style='border-color:rgba(255,255,255,0.06);margin:0.8rem 0'>",
+        unsafe_allow_html=True
+    )
     if st.sidebar.button("↺  Reset All Filters", use_container_width=True):
-        for key in ['f_plants','f_years','f_months','f_plan_type',
-                    'f_statuses','f_order_types','f_work_centers','f_groups']:
-            del st.session_state[key]
+        for key in ["f_plants","f_years","f_months","f_plan_type",
+                    "f_statuses","f_order_types","f_work_centers","f_groups"]:
+            if key in st.session_state:
+                del st.session_state[key]
         st.rerun()
 
     st.sidebar.markdown(
