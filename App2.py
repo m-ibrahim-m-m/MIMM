@@ -361,14 +361,15 @@ def display_kpis(fd):
 
 
 # ========================= FILTER SUMMARY =========================
-def display_filter_summary(fd, years):
+def display_filter_summary(fd, years, months):
     plants_str = " ".join(f'<span class="filter-pill">{p}</span>' for p in sorted(fd['Plant'].unique()))
+    months_preview = ", ".join(months[:3]) + (" ..." if len(months) > 3 else "")
     st.markdown(
         f'<div style="background:#1A2635;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:1rem 1.4rem;margin-bottom:0.5rem;">'
         f'<div style="display:flex;flex-wrap:wrap;gap:1.5rem;align-items:center;">'
         f'<div><div class="filter-group-label">Plants</div>{plants_str}</div>'
         f'<div><div class="filter-group-label">Period</div><span class="filter-pill">{years[0]} – {years[1]}</span></div>'
-        f'<div><div class="filter-group-label">Months</div><span class="filter-pill">{Month[0]} – {Month[1]}</span></div>'
+        f'<div><div class="filter-group-label">Months</div><span class="filter-pill">{months_preview}</span></div>'
         f'<div><div class="filter-group-label">Dataset</div><span class="filter-pill">{len(fd):,} records</span></div>'
         f'</div></div>',
         unsafe_allow_html=True
@@ -410,14 +411,14 @@ def plot_completion_donuts(fd):
         if total_p:
             st.plotly_chart(donut([comp_p, total_p-comp_p], ['Completed','Remaining'],
                                   "Planned Orders Completion", COLORS["success"]),
-                            width="stretch")
+                            use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
         if total_o:
             st.plotly_chart(donut([comp_o, total_o-comp_o], ['Completed','Remaining'],
                                   "Overall Orders Completion", COLORS["accent"]),
-                            width="stretch")
+                            use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -431,7 +432,7 @@ def plot_status_distribution(fd):
                      color_discrete_map={'Planned': COLORS["planned"], 'Unplanned': COLORS["unplanned"]})
         fig.update_traces(texttemplate='%{text:,}', textposition='outside', marker_line_width=0, opacity=0.9)
         apply_layout(fig, legend=dict(orientation="h", y=1.08))
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
@@ -440,7 +441,7 @@ def plot_status_distribution(fd):
                       title="Status Split per Plant", color_discrete_map=STATUS_COLORS)
         fig2.update_traces(marker_line_width=0)
         apply_layout(fig2)
-        st.plotly_chart(fig2, width="stretch")
+        st.plotly_chart(fig2, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -452,7 +453,7 @@ def plot_department_orders(fd):
                  title="Orders by Department", color_discrete_map=STATUS_COLORS)
     fig.update_traces(texttemplate='%{text:,}', textposition='outside', marker_line_width=0)
     apply_layout(fig)
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -467,7 +468,7 @@ def plot_status_trends(fd):
     fig.update_traces(line_width=2.5, marker_size=6)
     fig.update_xaxes(categoryorder='array', categoryarray=MONTH_ORDER, tickangle=45, tickfont_size=10)
     apply_layout(fig)
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -481,7 +482,7 @@ def plot_order_type_analysis(fd):
         fig.update_traces(textposition='inside', textinfo='percent+label',
                           marker=dict(line=dict(color='#0F1923', width=2)))
         apply_layout(fig)
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
@@ -493,7 +494,7 @@ def plot_order_type_analysis(fd):
         fig.update_traces(line_width=2, marker_size=5)
         fig.update_xaxes(tickangle=45, tickfont_size=10)
         apply_layout(fig)
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('<div class="chart-card">', unsafe_allow_html=True)
@@ -506,7 +507,7 @@ def plot_order_type_analysis(fd):
                 marker_color=COLORS["accent"], marker_line_width=0, opacity=0.85)
     apply_layout(fig)
     fig.update_layout(barmode='group', title_text="Avg Planned vs Actual Cost by Order Type")
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -519,7 +520,7 @@ def plot_cost_analysis(fd):
                      title="Top 10 Cost Savings (by Order Type)", text_auto='.2s')
         fig.update_traces(marker_line_width=0)
         apply_layout(fig)
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     with col2:
         st.markdown('<div class="chart-card">', unsafe_allow_html=True)
@@ -529,7 +530,7 @@ def plot_cost_analysis(fd):
                                               COLORS["warning"], COLORS["success"]])
         fig.update_traces(line_width=1.5)
         apply_layout(fig)
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -550,7 +551,7 @@ def show_raw_data(fd):
     # Sort safely — column may not exist in all datasets
     sort_col = 'Basic start date' if 'Basic start date' in display_df.columns else display_df.columns[0]
     st.dataframe(display_df.sort_values(sort_col, ascending=False),
-                 width="stretch", height=380)
+                 use_container_width=True, height=380)
 
     buffer = io.BytesIO()
     # Use openpyxl — available on Streamlit Cloud without extra deps
@@ -620,7 +621,7 @@ def main():
         st.warning("⚠️ No records match the current filters. Please adjust your selections.")
         st.stop()
 
-    display_filter_summary(fd, years)
+    display_filter_summary(fd, years, months)
     section_header("📊", "Key Performance Indicators")
     display_kpis(fd)
 
