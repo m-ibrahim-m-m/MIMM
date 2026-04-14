@@ -368,6 +368,7 @@ def display_filter_summary(fd, years):
         f'<div style="display:flex;flex-wrap:wrap;gap:1.5rem;align-items:center;">'
         f'<div><div class="filter-group-label">Plants</div>{plants_str}</div>'
         f'<div><div class="filter-group-label">Period</div><span class="filter-pill">{years[0]} – {years[1]}</span></div>'
+        f'<div><div class="filter-group-label">Months</div><span class="filter-pill">{Month[0]} – {Month[1]}</span></div>'
         f'<div><div class="filter-group-label">Dataset</div><span class="filter-pill">{len(fd):,} records</span></div>'
         f'</div></div>',
         unsafe_allow_html=True
