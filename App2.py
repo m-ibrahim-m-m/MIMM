@@ -23,16 +23,6 @@ def load_custom_css():
             padding: 0rem 1rem;
         }
         
-        /* Custom card styling */
-        .custom-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 1.5rem;
-            border-radius: 1rem;
-            color: white;
-            margin-bottom: 1rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        
         /* Metric card styling */
         .metric-card {
             background: white;
@@ -48,18 +38,18 @@ def load_custom_css():
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
         
-        /* Header styling */
-        .dashboard-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 2rem;
-            border-radius: 1rem;
-            margin-bottom: 2rem;
-            color: white;
+        /* Tab styling */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 2rem;
+            background-color: #f1f5f9;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
         }
         
-        /* Sidebar styling */
-        .css-1d391kg {
-            background-color: #f8fafc;
+        .stTabs [data-baseweb="tab"] {
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
         }
         
         /* Button styling */
@@ -75,20 +65,6 @@ def load_custom_css():
         .stButton > button:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-        
-        /* Tab styling */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 2rem;
-            background-color: #f1f5f9;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-        }
-        
-        .stTabs [data-baseweb="tab"] {
-            border-radius: 0.5rem;
-            padding: 0.5rem 1rem;
-            font-weight: 500;
         }
         
         /* Responsive design */
@@ -192,7 +168,7 @@ def create_enhanced_filters(data):
         else:
             years = (2020, 2024)
         
-        # Plant selector with icons
+        # Plant selector
         st.markdown("#### 🏭 Plants")
         plants = st.multiselect(
             "Select Plants:",
@@ -235,21 +211,18 @@ def create_enhanced_filters(data):
         
         # Advanced filters (collapsible)
         with st.expander("🔧 Advanced Filters"):
-            # Work center selector
             work_center = st.multiselect(
                 "Department:",
                 options=data['Main Work Center'].unique() if 'Main Work Center' in data.columns else [],
                 default=data['Main Work Center'].unique() if 'Main Work Center' in data.columns else []
             )
             
-            # Order Type selector
             Order_type = st.multiselect(
                 "Work Order Type:",
                 options=data['Order Type'].unique() if 'Order Type' in data.columns else [],
                 default=data['Order Type'].unique() if 'Order Type' in data.columns else []
             )
             
-            # Task list selector
             Group = st.multiselect(
                 "Task List Code:",
                 options=data['Group'].unique() if 'Group' in data.columns else [],
@@ -268,8 +241,6 @@ def create_enhanced_filters(data):
 def display_enhanced_header():
     """Display enhanced dashboard header"""
     col1, col2, col3 = st.columns([1, 2, 1])
-    with col1:
-        st.markdown("🔧", unsafe_allow_html=True)
     with col2:
         st.markdown("""
         <div style='text-align: center;'>
@@ -354,44 +325,38 @@ def display_enhanced_kpis(filtered_data):
         st.metric(
             label="📋 Total Orders",
             value=f"{total_orders:,}",
-            delta=f"{((completed_orders/total_orders)*100 if total_orders>0 else 0):.1f}% completion",
-            delta_color="normal"
+            delta=f"{((completed_orders/total_orders)*100 if total_orders>0 else 0):.1f}% completion"
         )
     
     with col2:
         st.metric(
             label="✅ Completion Rate",
             value=f"{overall_completion_pct:.1f}%",
-            delta=f"{planned_completion_pct:.1f}% planned",
-            delta_color="normal"
+            delta=f"{planned_completion_pct:.1f}% planned"
         )
     
     with col3:
         st.metric(
             label="⏱️ Avg Duration",
-            value=f"{avg_duration:.1f} days" if avg_duration > 0 else "N/A",
-            delta=None
+            value=f"{avg_duration:.1f} days" if avg_duration > 0 else "N/A"
         )
     
     with col4:
         st.metric(
             label="💰 Total Cost",
-            value=f"EGP {total_cost:,.0f}" if total_cost > 0 else "N/A",
-            delta=None
+            value=f"EGP {total_cost:,.0f}" if total_cost > 0 else "N/A"
         )
     
     with col5:
         st.metric(
             label="📊 Avg Cost Deviation",
-            value=f"EGP {avg_cost_deviation:,.0f}" if avg_cost_deviation != 0 else "N/A",
-            delta_color="inverse"
+            value=f"EGP {avg_cost_deviation:,.0f}" if avg_cost_deviation != 0 else "N/A"
         )
     
     with col6:
         st.metric(
             label="🏭 Active Plants",
-            value=f"{filtered_data['Plant'].nunique() if 'Plant' in filtered_data.columns else 0}",
-            delta=None
+            value=f"{filtered_data['Plant'].nunique() if 'Plant' in filtered_data.columns else 0}"
         )
     
     # Progress bars for completion rates
@@ -405,9 +370,55 @@ def display_enhanced_kpis(filtered_data):
         if 'Maintenance Plan' in filtered_data.columns:
             st.progress(planned_completion_pct / 100, text=f"Planned Orders Completion: {planned_completion_pct:.1f}%")
 
-def plot_order_status_distribution(filtered_data):
-    """Visualize order status distribution with enhanced design"""
-    st.markdown("### 📊 Order Status Analytics")
+def plot_status_overview(filtered_data):
+    """Simplified status overview for the Overview tab"""
+    st.markdown("### 📊 Quick Status Overview")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Simple status distribution bar chart
+        status_counts = filtered_data['Order Status'].value_counts().reset_index()
+        status_counts.columns = ['Status', 'Count']
+        
+        fig = px.bar(
+            status_counts,
+            x='Status',
+            y='Count',
+            color='Status',
+            text='Count',
+            title="Order Status Distribution",
+            color_discrete_sequence=px.colors.qualitative.Set2
+        )
+        
+        fig.update_traces(textposition='outside')
+        fig.update_layout(showlegend=False, height=400)
+        st.plotly_chart(fig, use_container_width=True, key="overview_status_chart")
+    
+    with col2:
+        # Simple completion pie chart
+        completion_data = pd.DataFrame({
+            'Status': ['Completed', 'Not Completed'],
+            'Count': [
+                len(filtered_data[filtered_data['Order Status'] == 'Completed']),
+                len(filtered_data[filtered_data['Order Status'] != 'Completed'])
+            ]
+        })
+        
+        fig = px.pie(
+            completion_data,
+            values='Count',
+            names='Status',
+            title="Completion Overview",
+            hole=0.3,
+            color_discrete_sequence=['#10b981', '#ef4444']
+        )
+        
+        st.plotly_chart(fig, use_container_width=True, key="overview_completion_chart")
+
+def plot_detailed_status_analysis(filtered_data):
+    """Detailed status analysis for the Status tab"""
+    st.markdown("### 📊 Detailed Status Analytics")
     
     tab1, tab2, tab3 = st.tabs(["📈 Status Distribution", "🏭 By Plant", "📊 Trend Analysis"])
     
@@ -415,7 +426,7 @@ def plot_order_status_distribution(filtered_data):
         col1, col2 = st.columns(2)
         
         with col1:
-            # Create grouped status counts
+            # Create grouped status counts with plan type
             if 'Maintenance Plan' in filtered_data.columns:
                 filtered_data['Plan Type'] = np.where(
                     filtered_data['Maintenance Plan'].notna(),
@@ -444,27 +455,15 @@ def plot_order_status_distribution(filtered_data):
                 }
             )
             
-            fig.update_traces(
-                texttemplate='%{text:,}',
-                textposition='outside'
-            )
-            
+            fig.update_traces(texttemplate='%{text:,}', textposition='outside')
             fig.update_layout(
                 xaxis_title="Order Status",
                 yaxis_title="Number of Orders",
                 legend_title="Plan Type",
-                uniformtext_minsize=10,
-                legend=dict(
-                    orientation="h",
-                    yanchor="bottom",
-                    y=1.02,
-                    xanchor="right",
-                    x=1
-                ),
                 height=400
             )
             
-            st.plotly_chart(fig, use_container_width=True, key="status_bar_chart")
+            st.plotly_chart(fig, use_container_width=True, key="detailed_status_bar")
         
         with col2:
             # Pie chart for overall status distribution
@@ -480,13 +479,8 @@ def plot_order_status_distribution(filtered_data):
                 color_discrete_sequence=px.colors.qualitative.Set3
             )
             
-            fig_pie.update_traces(
-                textposition='inside',
-                textinfo='percent+label',
-                pull=[0.05 if i == 0 else 0 for i in range(len(status_pie))]
-            )
-            
-            st.plotly_chart(fig_pie, use_container_width=True, key="status_pie_chart")
+            fig_pie.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(fig_pie, use_container_width=True, key="detailed_status_pie")
     
     with tab2:
         # Plant-wise breakdown
@@ -506,11 +500,7 @@ def plot_order_status_distribution(filtered_data):
                 color_discrete_sequence=px.colors.qualitative.Pastel
             )
             
-            fig_plant.update_traces(
-                texttemplate='%{text:,}',
-                textposition='inside'
-            )
-            
+            fig_plant.update_traces(texttemplate='%{text:,}', textposition='inside')
             fig_plant.update_layout(
                 xaxis_title="Plant",
                 yaxis_title="Number of Orders",
@@ -518,7 +508,7 @@ def plot_order_status_distribution(filtered_data):
                 height=400
             )
             
-            st.plotly_chart(fig_plant, use_container_width=True, key="plant_status_chart")
+            st.plotly_chart(fig_plant, use_container_width=True, key="detailed_plant_status")
         else:
             st.warning("Plant column not available for this analysis")
     
@@ -550,7 +540,7 @@ def plot_order_status_distribution(filtered_data):
             )
             
             fig_trend.update_layout(height=400)
-            st.plotly_chart(fig_trend, use_container_width=True, key="status_trend_chart")
+            st.plotly_chart(fig_trend, use_container_width=True, key="detailed_trend_chart")
         else:
             st.warning("Date information not available for trend analysis")
 
@@ -567,7 +557,7 @@ def plot_department_analysis(filtered_data):
     with col1:
         department_counts = filtered_data['Main Work Center'].value_counts().reset_index()
         department_counts.columns = ['Department', 'Count']
-        department_counts = department_counts.head(10)  # Top 10 departments
+        department_counts = department_counts.head(10)
         
         fig = px.bar(
             department_counts,
@@ -579,19 +569,9 @@ def plot_department_analysis(filtered_data):
             color_continuous_scale='Viridis'
         )
         
-        fig.update_traces(
-            texttemplate='%{text:,}',
-            textposition='outside'
-        )
-        
-        fig.update_layout(
-            xaxis_title="Department",
-            yaxis_title="Number of Orders",
-            showlegend=False,
-            height=400
-        )
-        
-        st.plotly_chart(fig, use_container_width=True, key="dept_orders_chart")
+        fig.update_traces(texttemplate='%{text:,}', textposition='outside')
+        fig.update_layout(xaxis_title="Department", yaxis_title="Number of Orders", showlegend=False, height=400)
+        st.plotly_chart(fig, use_container_width=True, key="dept_orders")
     
     with col2:
         # Department completion rates
@@ -613,19 +593,9 @@ def plot_department_analysis(filtered_data):
             color_continuous_scale='RdYlGn'
         )
         
-        fig.update_traces(
-            texttemplate='%{text:.1f}%',
-            textposition='outside'
-        )
-        
-        fig.update_layout(
-            xaxis_title="Department",
-            yaxis_title="Completion Rate (%)",
-            showlegend=False,
-            height=400
-        )
-        
-        st.plotly_chart(fig, use_container_width=True, key="dept_completion_chart")
+        fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+        fig.update_layout(xaxis_title="Department", yaxis_title="Completion Rate (%)", showlegend=False, height=400)
+        st.plotly_chart(fig, use_container_width=True, key="dept_completion")
 
 def plot_cost_analysis(filtered_data):
     """Visualize cost-related metrics with enhanced insights"""
@@ -641,7 +611,6 @@ def plot_cost_analysis(filtered_data):
         col1, col2 = st.columns(2)
         
         with col1:
-            # Cost by order type
             if 'Order Type' in filtered_data.columns:
                 cost_by_type = filtered_data.groupby('Order Type').agg({
                     'Total planned costs': 'sum',
@@ -659,12 +628,9 @@ def plot_cost_analysis(filtered_data):
                 )
                 
                 fig.update_layout(height=400)
-                st.plotly_chart(fig, use_container_width=True, key="cost_by_type_chart")
-            else:
-                st.warning("Order Type information not available")
+                st.plotly_chart(fig, use_container_width=True, key="cost_by_type")
         
         with col2:
-            # Cost distribution by plant
             if 'Plant' in filtered_data.columns:
                 cost_by_plant = filtered_data.groupby('Plant')['Total sum (actual)'].sum().reset_index()
                 
@@ -677,12 +643,9 @@ def plot_cost_analysis(filtered_data):
                     color_discrete_sequence=px.colors.qualitative.Set3
                 )
                 
-                st.plotly_chart(fig, use_container_width=True, key="cost_by_plant_chart")
-            else:
-                st.warning("Plant information not available")
+                st.plotly_chart(fig, use_container_width=True, key="cost_by_plant")
     
     with tab2:
-        # Cost savings analysis
         filtered_data['Cost Savings'] = filtered_data['Total planned costs'] - filtered_data['Total sum (actual)']
         savings_data = filtered_data.nlargest(10, 'Cost Savings')
         
@@ -697,10 +660,9 @@ def plot_cost_analysis(filtered_data):
         )
         
         fig.update_layout(height=500)
-        st.plotly_chart(fig, use_container_width=True, key="cost_savings_chart")
+        st.plotly_chart(fig, use_container_width=True, key="cost_savings")
     
     with tab3:
-        # Variance analysis
         fig = px.box(
             filtered_data,
             x='Order Status',
@@ -711,7 +673,7 @@ def plot_cost_analysis(filtered_data):
         )
         
         fig.update_layout(height=500)
-        st.plotly_chart(fig, use_container_width=True, key="variance_chart")
+        st.plotly_chart(fig, use_container_width=True, key="variance_analysis")
 
 def plot_temporal_analysis(filtered_data):
     """Visualize temporal trends and patterns"""
@@ -727,7 +689,6 @@ def plot_temporal_analysis(filtered_data):
         col1, col2 = st.columns(2)
         
         with col1:
-            # Monthly order volume
             monthly_orders = filtered_data.groupby(['Year', 'Month']).size().reset_index(name='Count')
             month_order = ['January', 'February', 'March', 'April', 'May', 'June',
                           'July', 'August', 'September', 'October', 'November', 'December']
@@ -745,10 +706,9 @@ def plot_temporal_analysis(filtered_data):
             )
             
             fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True, key="monthly_volume_chart")
+            st.plotly_chart(fig, use_container_width=True, key="monthly_volume")
         
         with col2:
-            # Monthly cost trends
             if 'Total sum (actual)' in filtered_data.columns:
                 monthly_cost = filtered_data.groupby(['Year', 'Month']).agg({
                     'Total sum (actual)': 'sum'
@@ -766,16 +726,12 @@ def plot_temporal_analysis(filtered_data):
                 )
                 
                 fig.update_layout(height=400)
-                st.plotly_chart(fig, use_container_width=True, key="monthly_cost_chart")
-            else:
-                st.warning("Cost information not available")
+                st.plotly_chart(fig, use_container_width=True, key="monthly_cost")
     
     with tab2:
-        # Quarterly analysis
         quarterly_data = filtered_data.groupby(['Year', 'Quarter']).agg({
             'Order': 'count',
-            'Total sum (actual)': 'sum' if 'Total sum (actual)' in filtered_data.columns else 'count',
-            'Duration Days': 'mean' if 'Duration Days' in filtered_data.columns else 'count'
+            'Total sum (actual)': 'sum' if 'Total sum (actual)' in filtered_data.columns else 'count'
         }).reset_index()
         
         fig = px.bar(
@@ -790,14 +746,14 @@ def plot_temporal_analysis(filtered_data):
         
         fig.update_traces(textposition='outside')
         fig.update_layout(height=400)
-        st.plotly_chart(fig, use_container_width=True, key="quarterly_chart")
+        st.plotly_chart(fig, use_container_width=True, key="quarterly_volume")
 
 def show_enhanced_raw_data(filtered_data):
     """Display interactive data table with enhanced features"""
     st.markdown("### 📄 Data Explorer")
     
     # Add search functionality
-    search_term = st.text_input("🔍 Search across all columns", placeholder="Enter search term...")
+    search_term = st.text_input("🔍 Search across all columns", placeholder="Enter search term...", key="search_box")
     
     if search_term:
         mask = filtered_data.astype(str).apply(lambda x: x.str.contains(search_term, case=False, na=False)).any(axis=1)
@@ -814,37 +770,24 @@ def show_enhanced_raw_data(filtered_data):
     selected_columns = st.multiselect(
         "Select columns to display",
         available_columns,
-        default=[col for col in default_columns if col in available_columns]
+        default=[col for col in default_columns if col in available_columns],
+        key="column_selector"
     )
     
     if selected_columns:
         display_data = display_data[selected_columns]
     
-    # Display dataframe with custom formatting
-    column_config = {}
-    if 'Total planned costs' in display_data.columns:
-        column_config['Total planned costs'] = st.column_config.NumberColumn(format="EGP %.2f")
-    if 'Total sum (actual)' in display_data.columns:
-        column_config['Total sum (actual)'] = st.column_config.NumberColumn(format="EGP %.2f")
-    if 'Cost Variance %' in display_data.columns:
-        column_config['Cost Variance %'] = st.column_config.NumberColumn(format="%.2f%%")
-    if 'Basic start date' in display_data.columns:
-        column_config['Basic start date'] = st.column_config.DateColumn(format="YYYY-MM-DD")
-    if 'Basic finish date' in display_data.columns:
-        column_config['Basic finish date'] = st.column_config.DateColumn(format="YYYY-MM-DD")
-    
+    # Display dataframe
     st.dataframe(
-        display_data.sort_values('Basic start date', ascending=False) if 'Basic start date' in display_data.columns else display_data,
-        column_config=column_config,
+        display_data,
         use_container_width=True,
         height=500
     )
     
     # Export functionality
-    col1, col2, col3 = st.columns([1, 1, 1])
+    col1, col2 = st.columns(2)
     
     with col1:
-        # Export to CSV
         csv = display_data.to_csv(index=False)
         st.download_button(
             label="📥 Download as CSV",
@@ -856,7 +799,6 @@ def show_enhanced_raw_data(filtered_data):
         )
     
     with col2:
-        # Export to Excel
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
             display_data.to_excel(writer, index=False, sheet_name='Maintenance Data')
@@ -870,10 +812,6 @@ def show_enhanced_raw_data(filtered_data):
             use_container_width=True,
             key="download_excel"
         )
-    
-    with col3:
-        # Show row count
-        st.metric("Total Rows", f"{len(display_data):,}")
 
 def main():
     """Main application flow with enhanced UI/UX"""
@@ -943,10 +881,10 @@ def main():
     with tab_overview:
         display_enhanced_kpis(filtered_data)
         st.divider()
-        plot_order_status_distribution(filtered_data)
+        plot_status_overview(filtered_data)
     
     with tab_status:
-        plot_order_status_distribution(filtered_data)
+        plot_detailed_status_analysis(filtered_data)
     
     with tab_department:
         plot_department_analysis(filtered_data)
