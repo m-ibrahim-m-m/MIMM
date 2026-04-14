@@ -1,524 +1,341 @@
 import pandas as pd
 import streamlit as st
 import plotly.express as px
-import plotly.graph_objects as go
 import numpy as np
 import io
 import warnings
 
+# Suppress specific FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning, module="plotly.express")
 
-# ========================= THEME & STYLES =========================
-COLORS = {
-    "primary": "#1E3A5F",
-    "accent": "#00C2CB",
-    "success": "#00B37E",
-    "warning": "#F59E0B",
-    "danger": "#EF4444",
-    "planned": "#3B82F6",
-    "unplanned": "#F97316",
-    "bg_dark": "#0F1923",
-    "bg_card": "#1A2635",
-    "text_light": "#E2E8F0",
-    "text_muted": "#94A3B8",
-}
-
-STATUS_COLORS = {
-    "Completed": "#00B37E",
-    "In Progress": "#00C2CB",
-    "Open": "#F59E0B",
-    "Canceled": "#EF4444",
-    "Not Executed & Deleted": "#6B7280",
-}
-
-PLOTLY_LAYOUT = dict(
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="'IBM Plex Sans', sans-serif", color="#E2E8F0", size=12),
-    title=dict(font=dict(size=15, color="#E2E8F0"), x=0.01, xanchor="left"),
-    xaxis=dict(gridcolor="rgba(255,255,255,0.05)", linecolor="rgba(255,255,255,0.1)"),
-    yaxis=dict(gridcolor="rgba(255,255,255,0.05)", linecolor="rgba(255,255,255,0.1)"),
-    margin=dict(l=16, r=16, t=48, b=16),
-    colorway=["#00C2CB", "#3B82F6", "#00B37E", "#F59E0B", "#EF4444", "#F97316"],
+# ========================= PAGE CONFIG =========================
+st.set_page_config(
+    page_title="Maintenance Analytics Dashboard",
+    page_icon="🔧",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-LEGEND_DEFAULT = dict(bgcolor="rgba(0,0,0,0)", bordercolor="rgba(255,255,255,0.08)", borderwidth=1)
+# Custom CSS for better UI/UX
+st.markdown("""
+    <style>
+    .main-header {
+        font-size: 2.8rem;
+        font-weight: 700;
+        color: #1E3A8A;
+        text-align: center;
+        margin-bottom: 0.5rem;
+    }
+    .sub-header {
+        font-size: 1.1rem;
+        color: #64748B;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .metric-card {
+        background-color: #F8FAFC;
+        border-radius: 12px;
+        padding: 1.2rem;
+        border: 1px solid #E2E8F0;
+    }
+    .stPlotlyChart {
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .sidebar .sidebar-content {
+        background-color: #F1F5F9;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-def apply_layout(fig, legend=None):
-    fig.update_layout(**PLOTLY_LAYOUT)
-    fig.update_layout(legend={**LEGEND_DEFAULT, **(legend or {})})
-    return fig
-
-CUSTOM_CSS = """
-<style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
-html, body, [class*="css"] { font-family: 'IBM Plex Sans', sans-serif !important; }
-.stApp { background: #0F1923; color: #E2E8F0; }
-.main .block-container { padding: 1.5rem 2rem 3rem; max-width: 1400px; }
-[data-testid="stSidebar"] { background: #131E2B !important; border-right: 1px solid rgba(255,255,255,0.06); }
-[data-testid="stSidebar"] label { color: #94A3B8 !important; font-size: 0.78rem !important; }
-.dash-hero {
-    background: linear-gradient(135deg, #1E3A5F 0%, #0F1923 60%);
-    border: 1px solid rgba(0,194,203,0.18);
-    border-radius: 16px;
-    padding: 2rem 2.5rem;
-    margin-bottom: 1.5rem;
-    position: relative;
-    overflow: hidden;
-}
-.dash-hero::before {
-    content:'';position:absolute;top:0;right:0;width:320px;height:100%;
-    background:radial-gradient(ellipse at 80% 50%,rgba(0,194,203,0.12) 0%,transparent 70%);
-    pointer-events:none;
-}
-.dash-hero h1 { font-size:1.9rem!important;font-weight:700!important;color:#E2E8F0!important;margin:0 0 0.25rem!important;letter-spacing:-0.02em; }
-.dash-hero p { color:#64748B;font-size:0.9rem;margin:0; }
-.dash-hero .accent { color:#00C2CB; }
-.section-header {
-    display:flex;align-items:center;gap:0.6rem;
-    margin:2rem 0 1rem;padding-bottom:0.6rem;
-    border-bottom:1px solid rgba(255,255,255,0.06);
-}
-.section-header span { font-size:1.05rem;font-weight:600;color:#E2E8F0;letter-spacing:-0.01em; }
-.section-header .pill {
-    background:rgba(0,194,203,0.12);color:#00C2CB;
-    font-size:0.7rem;font-weight:600;padding:2px 8px;
-    border-radius:20px;letter-spacing:0.06em;text-transform:uppercase;
-}
-.kpi-card {
-    background:#1A2635;border:1px solid rgba(255,255,255,0.06);
-    border-radius:12px;padding:1.2rem 1.4rem;
-    position:relative;overflow:hidden;
-    transition:border-color 0.2s,transform 0.2s;
-}
-.kpi-card:hover { border-color:rgba(0,194,203,0.3);transform:translateY(-2px); }
-.kpi-card::after {
-    content:'';position:absolute;bottom:0;left:0;right:0;height:3px;
-    background:var(--kpi-accent,#00C2CB);border-radius:0 0 12px 12px;
-}
-.kpi-label { font-size:0.72rem;color:#64748B;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;margin-bottom:0.5rem; }
-.kpi-value { font-size:1.6rem;font-weight:700;color:#E2E8F0;font-family:'IBM Plex Mono',monospace;line-height:1; }
-.chart-card {
-    background:#1A2635;border:1px solid rgba(255,255,255,0.06);
-    border-radius:14px;padding:1.25rem;margin-bottom:1rem;
-}
-.stTabs [data-baseweb="tab-list"] {
-    background:#131E2B!important;border-radius:10px!important;
-    padding:4px!important;gap:4px!important;border:1px solid rgba(255,255,255,0.06);
-}
-.stTabs [data-baseweb="tab"] {
-    background:transparent!important;color:#64748B!important;
-    border-radius:7px!important;font-size:0.85rem!important;
-    font-weight:500!important;padding:0.5rem 1.2rem!important;
-}
-.stTabs [aria-selected="true"] { background:#1E3A5F!important;color:#00C2CB!important; }
-[data-testid="stFileUploader"] {
-    border:1.5px dashed rgba(0,194,203,0.3)!important;
-    border-radius:12px!important;background:rgba(0,194,203,0.03)!important;
-}
-.filter-pill {
-    display:inline-block;background:rgba(0,194,203,0.1);
-    border:1px solid rgba(0,194,203,0.2);color:#00C2CB;
-    font-size:0.75rem;padding:3px 10px;border-radius:20px;
-    margin:2px;font-family:'IBM Plex Mono',monospace;
-}
-.filter-group-label { font-size:0.7rem;color:#64748B;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px; }
-.stDownloadButton > button {
-    background:linear-gradient(135deg,#1E3A5F,#164e63)!important;
-    color:#00C2CB!important;border:1px solid rgba(0,194,203,0.3)!important;
-    border-radius:8px!important;font-weight:600!important;
-}
-</style>
-"""
-
-MONTH_ORDER = ['January','February','March','April','May','June',
-               'July','August','September','October','November','December']
-
-# ========================= DATA =========================
+# ========================= DATA LOADING & PROCESSING =========================
+@st.cache_data
 def load_data(uploaded_file=None):
     if uploaded_file is not None:
-        try:
-            return pd.read_excel(uploaded_file)
-        except Exception as e:
-            st.error(f"❌ Error reading uploaded file: {e}")
-            return pd.DataFrame()
+        return pd.read_excel(uploaded_file)
     try:
         return pd.read_excel("D:/Dash Board/Maintenance Orders.xlsx")
     except FileNotFoundError:
-        st.error("❌ Default file not found. Please upload an Excel file.")
-        return pd.DataFrame()
-    except Exception as e:
-        st.error(f"❌ Error loading default file: {e}")
+        st.error("❌ Default file not found at: D:/Dash Board/Maintenance Orders.xlsx")
         return pd.DataFrame()
 
 def process_data(data):
     if data.empty:
         return data
 
-    for col in ['Basic start date', 'Basic finish date']:
+    # Convert dates
+    date_cols = ['Basic start date', 'Basic finish date']
+    for col in date_cols:
         if col in data.columns:
             data[col] = pd.to_datetime(data[col], errors='coerce')
 
-    if 'Basic start date' in data.columns:
-        data['Year'] = data['Basic start date'].dt.year
-        data['Month'] = data['Basic start date'].dt.month_name()
-        data['Quarter'] = data['Basic start date'].dt.quarter
+    # Temporal features
+    data['Year'] = data['Basic start date'].dt.year
+    data['Month'] = data['Basic start date'].dt.month_name()
+    data['Quarter'] = data['Basic start date'].dt.quarter
 
+    # Order Status
     def determine_status(row):
-        statuses = f"{row.get('System status','')} {row.get('User Status','')}".upper().split()
-        for code, name in {'CNCL':'Canceled','CNF':'Completed','JIPR':'In Progress','NCMP':'Not Executed & Deleted'}.items():
+        statuses = f"{row.get('System status', '')} {row.get('User Status', '')}".upper().split()
+        priority = {
+            'CNCL': 'Canceled',
+            'CNF': 'Completed',
+            'JIPR': 'In Progress',
+            'NCMP': 'Not Executed & Deleted'
+        }
+        for code, name in priority.items():
             if code in statuses:
                 return name
         return 'Open'
 
     data['Order Status'] = data.apply(determine_status, axis=1)
-    data['Cost Deviation'] = data.get('Total sum (actual)', 0) - data.get('Total planned costs', 0)
-    data['Cost Variance %'] = data['Cost Deviation'] / data.get('Total planned costs', pd.Series(1)).replace(0, np.nan) * 100
-    data['Plan Type'] = np.where(data.get('Maintenance Plan', pd.Series()).notna(), 'Planned', 'Unplanned')
+
+    # Cost metrics
+    data['Cost Deviation'] = data['Total sum (actual)'] - data['Total planned costs']
+    data['Cost Variance %'] = (
+        (data['Cost Deviation'] / data['Total planned costs'].replace(0, np.nan)) * 100
+    )
+
+    # Plan Type
+    data['Plan Type'] = np.where(data['Maintenance Plan'].notna(), 'Planned', 'Unplanned')
 
     return data
 
-# ========================= SIDEBAR =========================
+# ========================= FILTER CREATION =========================
 def create_filters(data):
-    st.sidebar.markdown(
-        "<div style='padding:0.5rem 0 1.2rem'>"
-        "<p style='color:#00C2CB;font-size:0.7rem;font-weight:700;letter-spacing:0.1em;"
-        "text-transform:uppercase;margin:0 0 0.2rem'>Maintenance Dashboard</p>"
-        "<p style='color:#64748B;font-size:0.78rem;margin:0'>Filter & explore data</p></div>",
-        unsafe_allow_html=True
+    st.sidebar.header("🔍 Filter Options")
+    st.sidebar.markdown("---")
+
+    plants = st.sidebar.multiselect(
+        "🌱 Select Plants:",
+        options=sorted(data['Plant'].dropna().unique()),
+        default=sorted(data['Plant'].dropna().unique())[:2]
     )
 
-    # Safe unique values
-    all_plants = sorted(data['Plant'].dropna().unique()) if 'Plant' in data.columns else []
-    all_months = sorted(data['Month'].dropna().unique(), key=lambda x: MONTH_ORDER.index(x) if x in MONTH_ORDER else 99) if 'Month' in data.columns else []
-    all_plan_types = sorted(data['Plan Type'].dropna().unique()) if 'Plan Type' in data.columns else []
-    all_statuses = sorted(data['Order Status'].dropna().unique()) if 'Order Status' in data.columns else []
-    all_order_types = sorted(data['Order Type'].dropna().unique()) if 'Order Type' in data.columns else []
-    all_work_centers = sorted(data['Main Work Center'].dropna().unique()) if 'Main Work Center' in data.columns else []
-    all_groups = sorted(data['Group'].dropna().unique()) if 'Group' in data.columns else []
+    years = st.sidebar.slider(
+        "📅 Select Year Range:",
+        min_value=int(data['Year'].min()),
+        max_value=int(data['Year'].max()),
+        value=(int(data['Year'].min()), int(data['Year'].max()))
+    )
 
-    year_min = int(data['Year'].min()) if 'Year' in data.columns and not data['Year'].empty else 2020
-    year_max = int(data['Year'].max()) if 'Year' in data.columns and not data['Year'].empty else 2026
+    month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    available_months = sorted(data['Month'].dropna().unique(), 
+                            key=lambda x: month_order.index(x) if x in month_order else 99)
 
-    ss = st.session_state
+    months = st.sidebar.multiselect(
+        "📆 Select Months:",
+        options=available_months,
+        default=available_months
+    )
 
-    def init(key, value):
-        if key not in ss:
-            ss[key] = value
+    plan_type = st.sidebar.multiselect(
+        "📋 Plan Type:",
+        options=data['Plan Type'].unique(),
+        default=data['Plan Type'].unique()
+    )
 
-    init("f_plants", all_plants)
-    init("f_years", (year_min, year_max))
-    init("f_months", all_months)
-    init("f_plan_type", all_plan_types)
-    init("f_statuses", all_statuses)
-    init("f_order_types", all_order_types)
-    init("f_work_centers", all_work_centers)
-    init("f_groups", all_groups)
+    statuses = st.sidebar.multiselect(
+        "📌 Order Statuses:",
+        options=data['Order Status'].unique(),
+        default=data['Order Status'].unique()
+    )
 
-    # Fixed sanitise - use correct dictionary
-    filter_map = {
-        "f_plants": all_plants,
-        "f_months": all_months,
-        "f_plan_type": all_plan_types,
-        "f_statuses": all_statuses,
-        "f_order_types": all_order_types,
-        "f_work_centers": all_work_centers,
-        "f_groups": all_groups,
-    }
+    work_centers = st.sidebar.multiselect(
+        "🏭 Department (Main Work Center):",
+        options=sorted(data['Main Work Center'].dropna().unique()),
+        default=sorted(data['Main Work Center'].dropna().unique())
+    )
 
-    def sanitise(key):
-        if key in ss and key in filter_map:
-            valid = [v for v in ss[key] if v in filter_map[key]]
-            ss[key] = valid if valid else list(filter_map[key])
+    order_types = st.sidebar.multiselect(
+        "🔧 Work Order Type:",
+        options=sorted(data['Order Type'].dropna().unique()),
+        default=sorted(data['Order Type'].dropna().unique())
+    )
 
-    for k in filter_map.keys():
-        sanitise(k)
+    groups = st.sidebar.multiselect(
+        "📂 Task List Code (Group):",
+        options=sorted(data['Group'].dropna().unique()),
+        default=sorted(data['Group'].dropna().unique())
+    )
 
-    # Clamp years
-    sy = ss.get("f_years", (year_min, year_max))
-    ss["f_years"] = (max(year_min, min(int(sy[0]), year_max)), max(year_min, min(int(sy[1]), year_max)))
-
-    with st.sidebar.expander("🏭 Plants", expanded=True):
-        plants = st.multiselect("Plants", options=all_plants, key="f_plants", label_visibility="collapsed")
-    with st.sidebar.expander("📅 Time Range", expanded=True):
-        years = st.slider("Years", min_value=year_min, max_value=year_max, key="f_years", label_visibility="collapsed")
-        months = st.multiselect("Months", options=all_months, key="f_months", label_visibility="collapsed")
-    with st.sidebar.expander("⚙️ Order Attributes", expanded=False):
-        plan_type = st.multiselect("Plan Type", options=all_plan_types, key="f_plan_type")
-        statuses = st.multiselect("Order Status", options=all_statuses, key="f_statuses")
-        order_types = st.multiselect("Work Order Type", options=all_order_types, key="f_order_types")
-    with st.sidebar.expander("🏗️ Department / Group", expanded=False):
-        work_centers = st.multiselect("Main Work Center", options=all_work_centers, key="f_work_centers")
-        groups = st.multiselect("Task List Code (Group)", options=all_groups, key="f_groups")
-
-    st.sidebar.markdown("<hr style='border-color:rgba(255,255,255,0.06);margin:0.8rem 0'>", unsafe_allow_html=True)
-    if st.sidebar.button("↺ Reset All Filters", use_container_width=True):
-        for key in list(ss.keys()):
-            if key.startswith("f_"):
-                del ss[key]
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🔄 Reset All Filters", use_container_width=True):
         st.rerun()
 
     return plants, years, months, plan_type, statuses, work_centers, order_types, groups
 
-# ========================= HELPERS & KPIs =========================
-def section_header(icon, title, badge=None):
-    badge_html = f'<span class="pill">{badge}</span>' if badge else ""
-    st.markdown(f'<div class="section-header"><span style="font-size:1.1rem">{icon}</span><span>{title}</span>{badge_html}</div>', unsafe_allow_html=True)
+# ========================= DISPLAY FUNCTIONS =========================
+def display_filter_summary(filtered_data):
+    with st.expander("🔎 Active Filters Summary", expanded=True):
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Plants", len(filtered_data['Plant'].unique()))
+        with col2:
+            st.metric("Months", len(filtered_data['Month'].unique()))
+        with col3:
+            st.metric("Years", len(filtered_data['Year'].unique()))
+        with col4:
+            st.metric("Total Orders", f"{len(filtered_data):,}")
 
-def display_kpis(fd):
-    if fd.empty:
-        st.warning("No data available for KPIs")
-        return
-    planned = fd[fd.get('Plan Type', pd.Series()) == 'Planned']
-    total_p = len(planned)
-    comp_p = len(planned[planned.get('Order Status', pd.Series()) == 'Completed'])
-    pct_p = (comp_p / total_p * 100) if total_p else 0
+def display_kpis(filtered_data):
+    st.header("📊 Key Performance Indicators")
 
-    total_o = len(fd)
-    comp_o = len(fd[fd.get('Order Status', pd.Series()) == 'Completed'])
-    pct_o = (comp_o / total_o * 100) if total_o else 0
+    planned_orders = filtered_data[filtered_data['Plan Type'] == 'Planned'].copy()
+    total_planned = len(planned_orders)
+    completed_planned = len(planned_orders[planned_orders['Order Status'] == 'Completed'])
+    planned_completion_pct = (completed_planned / total_planned * 100) if total_planned > 0 else 0
 
-    act_cost = fd.get('Total sum (actual)', pd.Series(0)).sum()
-    avg_dev = fd.get('Cost Deviation', pd.Series(0)).mean()
+    total_orders = len(filtered_data)
+    completed_orders = len(filtered_data[filtered_data['Order Status'] == 'Completed'])
+    overall_completion_pct = (completed_orders / total_orders * 100) if total_orders > 0 else 0
 
-    kpis = [
-        ("Total Orders", f"{total_o:,}", COLORS["accent"]),
-        ("Planned Orders", f"{total_p:,}", COLORS["planned"]),
-        ("Planned Completion", f"{pct_p:.1f}%", COLORS["success"]),
-        ("Overall Completion", f"{pct_o:.1f}%", COLORS["success"]),
-        ("Actual Cost (EGP)", f"{act_cost:,.0f}", COLORS["warning"]),
-        ("Avg Cost Deviation", f"{avg_dev:+,.0f}", COLORS["danger"] if avg_dev > 0 else COLORS["success"]),
+    metrics = [
+        ("Total Orders", len(filtered_data), "All maintenance orders", f"{len(filtered_data):,}"),
+        ("Planned Orders", total_planned, "Orders linked to maintenance plans", f"{total_planned:,}"),
+        ("Planned Completion", planned_completion_pct, "Planned orders completion rate", f"{planned_completion_pct:.1f}%"),
+        ("Overall Completion", overall_completion_pct, "All orders completion rate", f"{overall_completion_pct:.1f}%"),
+        ("Actual Cost (EGP)", filtered_data['Total sum (actual)'].sum(), "Total actual spending", f"{filtered_data['Total sum (actual)'].sum():,.2f}"),
+        ("Avg Cost Deviation", filtered_data['Cost Deviation'].mean(), "Average deviation from plan", f"{filtered_data['Cost Deviation'].mean():,.2f}")
     ]
-    cols = st.columns(len(kpis))
-    for col, (label, value, accent) in zip(cols, kpis):
-        with col:
-            st.markdown(f'<div class="kpi-card" style="--kpi-accent:{accent}"><div class="kpi-label">{label}</div><div class="kpi-value">{value}</div></div>', unsafe_allow_html=True)
 
-def display_filter_summary(fd, years, months):
-    plants_str = " ".join(f'<span class="filter-pill">{p}</span>' for p in sorted(fd.get('Plant', pd.Series()).unique()))
-    months_preview = ", ".join(months[:3]) + (" ..." if len(months) > 3 else "")
-    st.markdown(
-        f'<div style="background:#1A2635;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:1rem 1.4rem;margin-bottom:0.5rem;">'
-        f'<div style="display:flex;flex-wrap:wrap;gap:1.5rem;align-items:center;">'
-        f'<div><div class="filter-group-label">Plants</div>{plants_str}</div>'
-        f'<div><div class="filter-group-label">Period</div><span class="filter-pill">{years[0]} – {years[1]}</span></div>'
-        f'<div><div class="filter-group-label">Months</div><span class="filter-pill">{months_preview}</span></div>'
-        f'<div><div class="filter-group-label">Dataset</div><span class="filter-pill">{len(fd):,} records</span></div>'
-        f'</div></div>',
-        unsafe_allow_html=True
+    cols = st.columns(len(metrics))
+    for i, (label, value, help_text, formatted) in enumerate(metrics):
+        with cols[i]:
+            st.metric(label=label, value=formatted, help=help_text, delta=None)
+
+    # Completion Progress Bars
+    st.subheader("Completion Rates")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.progress(planned_completion_pct / 100, text=f"**Planned Orders Completion**: {planned_completion_pct:.1f}%")
+    with col2:
+        st.progress(overall_completion_pct / 100, text=f"**Overall Completion**: {overall_completion_pct:.1f}%")
+
+def main():
+    # ====================== HEADER ======================
+    st.markdown('<h1 class="main-header">🏭 Maintenance Operations Analytics</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-header">Real-time insights into your maintenance performance, costs, and efficiency</p>', unsafe_allow_html=True)
+
+    # File Uploader with better styling
+    uploaded_file = st.file_uploader(
+        "📤 Upload your Maintenance Orders Excel file",
+        type=["xlsx"],
+        help="Upload your data or the system will use the default file"
     )
 
-# ========================= CHARTS (with width='stretch') =========================
-def plot_completion_donuts(fd):
-    col1, col2 = st.columns(2)
-    planned = fd[fd.get('Plan Type', pd.Series()) == 'Planned']
-    total_p = len(planned)
-    comp_p = len(planned[planned.get('Order Status', pd.Series()) == 'Completed']) if not planned.empty else 0
-    total_o = len(fd)
-    comp_o = len(fd[fd.get('Order Status', pd.Series()) == 'Completed']) if not fd.empty else 0
-
-    def donut(vals, labels, title, color):
-        fig = go.Figure(go.Pie(values=vals, labels=labels, hole=0.62,
-                               marker_colors=[color, "rgba(255,255,255,0.06)"], textinfo='none'))
-        pct = vals[0]/sum(vals)*100 if sum(vals) else 0
-        fig.add_annotation(text=f"<b>{pct:.1f}%</b>", x=0.5, y=0.55, font=dict(size=22, color="#E2E8F0"), showarrow=False)
-        fig.add_annotation(text="complete", x=0.5, y=0.38, font=dict(size=11, color="#64748B"), showarrow=False)
-        fig.update_layout(title=title, legend=dict(orientation="h", y=-0.12))
-        return fig
-
-    with col1:
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        if total_p: st.plotly_chart(donut([comp_p, total_p-comp_p], ['Completed','Remaining'], "Planned Orders Completion", COLORS["success"]), width='stretch')
-        st.markdown('</div>', unsafe_allow_html=True)
-    with col2:
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        if total_o: st.plotly_chart(donut([comp_o, total_o-comp_o], ['Completed','Remaining'], "Overall Orders Completion", COLORS["accent"]), width='stretch')
-        st.markdown('</div>', unsafe_allow_html=True)
-
-def plot_status_distribution(fd):
-    col1, col2 = st.columns([3, 2])
-    with col1:
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        sc = fd.groupby(['Order Status','Plan Type'], observed=True).size().reset_index(name='Count') if not fd.empty else pd.DataFrame()
-        fig = px.bar(sc, x='Order Status', y='Count', color='Plan Type', barmode='group', text='Count',
-                     title="Orders by Status — Planned vs Unplanned",
-                     color_discrete_map={'Planned': COLORS["planned"], 'Unplanned': COLORS["unplanned"]})
-        fig.update_traces(texttemplate='%{text:,}', textposition='outside')
-        apply_layout(fig, legend=dict(orientation="h", y=1.08))
-        st.plotly_chart(fig, width='stretch')
-        st.markdown('</div>', unsafe_allow_html=True)
-    with col2:
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        ps = fd.groupby(['Plant','Order Status'], observed=True).size().reset_index(name='Count') if not fd.empty else pd.DataFrame()
-        fig2 = px.bar(ps, x='Plant', y='Count', color='Order Status', barmode='stack',
-                      title="Status Split per Plant", color_discrete_map=STATUS_COLORS)
-        apply_layout(fig2)
-        st.plotly_chart(fig2, width='stretch')
-        st.markdown('</div>', unsafe_allow_html=True)
-
-def plot_department_orders(fd):
-    st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-    dc = fd.groupby(['Main Work Center','Order Status'], observed=True).size().reset_index(name='Count') if not fd.empty else pd.DataFrame()
-    dc = dc.rename(columns={'Main Work Center':'Department'})
-    fig = px.bar(dc, x='Department', y='Count', color='Order Status', text='Count',
-                 title="Orders by Department", color_discrete_map=STATUS_COLORS)
-    fig.update_traces(texttemplate='%{text:,}', textposition='outside')
-    apply_layout(fig)
-    st.plotly_chart(fig, width='stretch')
-    st.markdown('</div>', unsafe_allow_html=True)
-
-def plot_status_trends(fd):
-    st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-    td = fd.groupby(['Year','Month','Order Status'], observed=True).size().reset_index(name='Count') if not fd.empty else pd.DataFrame()
-    td['Month'] = pd.Categorical(td['Month'], categories=MONTH_ORDER, ordered=True)
-    td = td.sort_values(['Year','Month'])
-    fig = px.line(td, x='Month', y='Count', color='Order Status', facet_col='Year',
-                  markers=True, title="Monthly Order Status Trends", color_discrete_map=STATUS_COLORS, line_shape='spline')
-    fig.update_traces(line_width=2.5, marker_size=6)
-    fig.update_xaxes(tickangle=45)
-    apply_layout(fig)
-    st.plotly_chart(fig, width='stretch')
-    st.markdown('</div>', unsafe_allow_html=True)
-
-def plot_order_type_analysis(fd):
-    col1, col2 = st.columns([2, 3])
-    with col1:
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        td = fd['Order Type'].value_counts().reset_index() if 'Order Type' in fd.columns else pd.DataFrame(columns=['Order Type','Count'])
-        td.columns = ['Order Type','Count']
-        fig = px.pie(td, names='Order Type', values='Count', title="Order Type Distribution", hole=0.5)
-        fig.update_traces(textposition='inside', textinfo='percent+label')
-        apply_layout(fig)
-        st.plotly_chart(fig, width='stretch')
-        st.markdown('</div>', unsafe_allow_html=True)
-    with col2:
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        trd = fd.groupby(['Year','Month','Order Type'], observed=True).size().reset_index(name='Count') if not fd.empty else pd.DataFrame()
-        trd['Month'] = pd.Categorical(trd['Month'], categories=MONTH_ORDER, ordered=True)
-        trd = trd.sort_values(['Year','Month'])
-        fig = px.line(trd, x='Month', y='Count', color='Order Type', facet_col='Year', markers=True, title="Monthly Order Type Trends", line_shape='spline')
-        apply_layout(fig)
-        st.plotly_chart(fig, width='stretch')
-        st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-    cd = fd.groupby('Order Type', observed=True).agg(Planned=('Total planned costs','mean'), Actual=('Total sum (actual)','mean')).reset_index() if not fd.empty else pd.DataFrame()
-    fig = go.Figure()
-    fig.add_bar(x=cd['Order Type'], y=cd.get('Planned', []), name='Planned', marker_color=COLORS["planned"])
-    fig.add_bar(x=cd['Order Type'], y=cd.get('Actual', []), name='Actual', marker_color=COLORS["accent"])
-    apply_layout(fig)
-    fig.update_layout(barmode='group', title_text="Avg Planned vs Actual Cost by Order Type")
-    st.plotly_chart(fig, width='stretch')
-    st.markdown('</div>', unsafe_allow_html=True)
-
-def plot_cost_analysis(fd):
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        dev_data = fd.nsmallest(10, 'Cost Deviation') if 'Cost Deviation' in fd.columns and not fd.empty else pd.DataFrame()
-        fig = px.bar(dev_data, x='Order Type', y='Cost Deviation', color='Plant', title="Top 10 Cost Savings (by Order Type)", text_auto='.2s')
-        apply_layout(fig)
-        st.plotly_chart(fig, width='stretch')
-        st.markdown('</div>', unsafe_allow_html=True)
-    with col2:
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        fig = px.box(fd, x='Order Status', y='Cost Variance %', color='Plant',
-                     title="Cost Variance % Distribution by Status",
-                     color_discrete_sequence=[COLORS["accent"], COLORS["planned"], COLORS["warning"], COLORS["success"]])
-        apply_layout(fig)
-        st.plotly_chart(fig, width='stretch')
-        st.markdown('</div>', unsafe_allow_html=True)
-
-def show_raw_data(fd):
-    st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-    search = st.text_input("🔎 Search within data", placeholder="Type to filter any column…")
-    display_df = fd
-    if search and not fd.empty:
-        mask = fd.apply(lambda col: col.astype(str).str.contains(search, case=False, na=False))
-        display_df = fd[mask.any(axis=1)]
-    st.markdown(f"<p style='color:#64748B;font-size:0.78rem;margin-bottom:0.5rem'>Showing <b>{len(display_df):,}</b> of <b>{len(fd):,}</b> records</p>", unsafe_allow_html=True)
-    if not display_df.empty:
-        sort_col = 'Basic start date' if 'Basic start date' in display_df.columns else display_df.columns[0]
-        st.dataframe(display_df.sort_values(sort_col, ascending=False), use_container_width=True, height=380)
-    buffer = io.BytesIO()
-    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-        fd.to_excel(writer, index=False)
-    buffer.seek(0)
-    st.download_button("📥 Download Filtered Data as Excel", data=buffer, file_name="filtered_maintenance_data.xlsx",
-                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# ========================= MAIN =========================
-def main():
-    st.set_page_config(page_title="SAP-PM-Report | Maintenance Analytics", page_icon="🔧", layout="wide")
-    st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
-
-    st.markdown('<div class="dash-hero"><h1>🏭 Maintenance <span class="accent">Analytics</span> Dashboard</h1><p>Real-time insight into work orders, costs, and team performance • SAP-PM Report</p></div>', unsafe_allow_html=True)
-
-    uploaded_file = st.file_uploader("Upload maintenance data (Excel .xlsx)", type=["xlsx"], label_visibility="collapsed")
-
-    with st.spinner("Loading and processing data…"):
+    with st.spinner("🔄 Loading and processing maintenance data..."):
         raw_data = load_data(uploaded_file)
         data = process_data(raw_data)
 
     if data.empty:
-        st.warning("⚠️ No data available. Please upload an Excel file.")
+        st.warning("⚠️ No data available. Please upload an Excel file to continue.")
         st.stop()
 
+    # ====================== FILTERS ======================
     plants, years, months, plan_type, statuses, work_centers, order_types, groups = create_filters(data)
 
-    # Guard against empty filters
-    empty_filters = []
-    if not plants: empty_filters.append("Plants")
-    if not months: empty_filters.append("Months")
-    if not plan_type: empty_filters.append("Plan Type")
-    if not statuses: empty_filters.append("Order Status")
-    if not order_types: empty_filters.append("Work Order Type")
-    if not work_centers: empty_filters.append("Main Work Center")
-    if not groups: empty_filters.append("Task List Code (Group)")
-    if empty_filters:
-        st.warning(f"⚠️ Please select at least one value for: **{', '.join(empty_filters)}**")
-        st.stop()
-
-    fd = data[
-        (data.get('Plant', pd.Series()).isin(plants)) &
-        (data.get('Year', pd.Series()).between(years[0], years[1])) &
-        (data.get('Month', pd.Series()).isin(months)) &
-        (data.get('Plan Type', pd.Series()).isin(plan_type)) &
-        (data.get('Order Status', pd.Series()).isin(statuses)) &
-        (data.get('Main Work Center', pd.Series()).isin(work_centers)) &
-        (data.get('Order Type', pd.Series()).isin(order_types)) &
-        (data.get('Group', pd.Series()).isin(groups))
+    # Apply filters
+    filtered_data = data[
+        (data['Plant'].isin(plants)) &
+        (data['Year'].between(years[0], years[1])) &
+        (data['Month'].isin(months)) &
+        (data['Plan Type'].isin(plan_type)) &
+        (data['Order Status'].isin(statuses)) &
+        (data['Main Work Center'].isin(work_centers)) &
+        (data['Order Type'].isin(order_types)) &
+        (data['Group'].isin(groups))
     ].copy()
 
-    if fd.empty:
-        st.warning("⚠️ No records match the current filters. Please adjust your selections.")
+    if filtered_data.empty:
+        st.error("❌ No data matches the selected filters. Please adjust your filters.")
         st.stop()
 
-    display_filter_summary(fd, years, months)
-    section_header("📊", "Key Performance Indicators")
-    display_kpis(fd)
-
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["✅ Completion", "📦 Order Status", "🏗️ Departments", "💰 Cost Analysis", "📄 Raw Data"])
+    # ====================== TABBED NAVIGATION ======================
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "📊 Overview & KPIs",
+        "📈 Order Analysis",
+        "🏭 Department & Trends",
+        "💰 Cost Analysis",
+        "📋 Raw Data"
+    ])
 
     with tab1:
-        section_header("✅", "Completion Overview", "Planned & Overall")
-        plot_completion_donuts(fd)
-        section_header("📈", "Trends Over Time")
-        plot_status_trends(fd)
-    with tab2:
-        section_header("📊", "Status Distribution")
-        plot_status_distribution(fd)
-        section_header("📦", "Order Type Breakdown")
-        plot_order_type_analysis(fd)
-    with tab3:
-        section_header("🏗️", "Department Performance")
-        plot_department_orders(fd)
-    with tab4:
-        section_header("💰", "Cost Analysis")
-        plot_cost_analysis(fd)
-    with tab5:
-        section_header("📄", "Raw Data Explorer")
-        show_raw_data(fd)
+        display_filter_summary(filtered_data)
+        st.divider()
+        display_kpis(filtered_data)
 
+    with tab2:
+        plot_order_status_distribution(filtered_data)
+        plot_order_type_analysis(filtered_data)
+
+    with tab3:
+        plot_department_orders(filtered_data)
+        plot_status_trends(filtered_data)
+
+    with tab4:
+        plot_cost_analysis(filtered_data)
+
+    with tab5:
+        show_raw_data(filtered_data)
+
+    # Footer
+    st.caption("🔧 Maintenance Analytics Dashboard | Built with Streamlit & Plotly")
+
+# ====================== Keep all your existing plot functions ======================
+# (Copy-paste all your original plot functions here without any change)
+
+def plot_order_status_distribution(filtered_data):
+    st.subheader("📊 Order Status Distribution (Planned vs Unplanned)")
+    status_counts = (filtered_data.groupby(['Order Status', 'Plan Type'], observed=True)
+                     .size().reset_index(name='Count'))
+    fig = px.bar(
+        status_counts, x='Order Status', y='Count', color='Plan Type',
+        barmode='group', text='Count',
+        color_discrete_map={'Planned': '#636EFA', 'Unplanned': '#EF553B'}
+    )
+    fig.update_traces(texttemplate='%{text:,}', textposition='outside')
+    fig.update_layout(legend_title="Plan Type", legend=dict(orientation="h", y=1.02))
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Plant breakdown
+    plant_status = (filtered_data.groupby(['Plant', 'Order Status'], observed=True)
+                    .size().reset_index(name='Count'))
+    fig2 = px.bar(plant_status, x='Plant', y='Count', color='Order Status', barmode='group')
+    st.plotly_chart(fig2, use_container_width=True)
+
+# ... (Keep all other plot functions exactly as they were: plot_department_orders, plot_status_trends, etc.)
+
+def plot_department_orders(filtered_data):
+    st.subheader("🏗️ Department-wise Order Distribution")
+    dept_counts = (filtered_data.groupby(['Main Work Center', 'Order Status'], observed=True)
+                   .size().reset_index(name='Count'))
+    dept_counts.rename(columns={'Main Work Center': 'Department'}, inplace=True)
+    fig = px.bar(dept_counts, x='Department', y='Count', color='Order Status', text='Count')
+    fig.update_traces(texttemplate='%{text:,}', textposition='outside')
+    st.plotly_chart(fig, use_container_width=True)
+
+# (Add the rest of your plot functions here - they remain unchanged)
+
+def show_raw_data(filtered_data):
+    st.subheader("📄 Raw Data Explorer")
+    st.dataframe(
+        filtered_data.sort_values('Basic start date', ascending=False),
+        use_container_width=True,
+        height=500
+    )
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        filtered_data.to_excel(writer, index=False, sheet_name='Filtered Data')
+    buffer.seek(0)
+    st.download_button(
+        label="📥 Download Filtered Data as Excel",
+        data=buffer,
+        file_name="filtered_maintenance_data.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True
+    )
+
+# ========================= RUN APP =========================
 if __name__ == "__main__":
     main()
