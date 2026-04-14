@@ -6,14 +6,6 @@ import io
 from datetime import datetime
 import plotly.graph_objects as go
 
-# Try to import xlsxwriter, handle if not available
-try:
-    import xlsxwriter
-    XLSXWRITER_AVAILABLE = True
-except ImportError:
-    XLSXWRITER_AVAILABLE = False
-    st.warning("xlsxwriter module not installed. Excel export will use CSV only.")
-
 # Configure page settings with enhanced theme
 st.set_page_config(
     page_title="Maintenance Analytics Dashboard",
@@ -796,7 +788,6 @@ def show_enhanced_raw_data(filtered_data):
     col1, col2 = st.columns(2)
     
     with col1:
-        # CSV export (always available)
         csv = display_data.to_csv(index=False)
         st.download_button(
             label="📥 Download as CSV",
@@ -808,28 +799,19 @@ def show_enhanced_raw_data(filtered_data):
         )
     
     with col2:
-        # Excel export (only if xlsxwriter is available)
-        if XLSXWRITER_AVAILABLE:
-            try:
-                buffer = io.BytesIO()
-                with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-                    display_data.to_excel(writer, index=False, sheet_name='Maintenance Data')
-                buffer.seek(0)
-                
-                st.download_button(
-                    label="📊 Download as Excel",
-                    data=buffer,
-                    file_name=f"maintenance_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True,
-                    key="download_excel"
-                )
-            except Exception as e:
-                st.error(f"Error creating Excel file: {str(e)}")
-                st.info("💡 Tip: Install xlsxwriter for Excel export: `pip install xlsxwriter`")
-        else:
-            st.warning("📊 Excel export requires xlsxwriter. Install it with: `pip install xlsxwriter`")
-            st.info("💡 You can still download data as CSV using the button on the left.")
+        buffer = io.BytesIO()
+        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+            display_data.to_excel(writer, index=False, sheet_name='Maintenance Data')
+        buffer.seek(0)
+        
+        st.download_button(
+            label="📊 Download as Excel",
+            data=buffer,
+            file_name=f"maintenance_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+            key="download_excel"
+        )
 
 def main():
     """Main application flow with enhanced UI/UX"""
