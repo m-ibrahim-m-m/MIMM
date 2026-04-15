@@ -14,64 +14,369 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for enhanced UI/UX
+# Custom CSS for premium UI/UX
 def load_custom_css():
     st.markdown("""
     <style>
-        /* Main container styling */
-        .main {
-            padding: 0rem 1rem;
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
         }
         
-        /* Metric card styling */
+        /* Color Variables */
+        :root {
+            --primary: #0f172a;
+            --secondary: #1e293b;
+            --accent: #3b82f6;
+            --accent-alt: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-light: #f8fafc;
+            --bg-lighter: #f1f5f9;
+            --border: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+        }
+        
+        /* Main container */
+        .main {
+            padding: 0;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            min-height: 100vh;
+        }
+        
+        [data-testid="stAppViewContainer"] {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+        
+        /* Header styling */
+        .header-container {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            padding: 2.5rem 2rem;
+            border-bottom: 2px solid rgba(59, 130, 246, 0.2);
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 0;
+            background: linear-gradient(135deg, #3b82f6, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header-subtitle {
+            color: #cbd5e1;
+            font-size: 0.95rem;
+            margin: 0.5rem 0 0 0;
+            font-weight: 500;
+        }
+        
+        .header-timestamp {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+        }
+        
+        /* Sidebar styling */
+        [data-testid="stSidebar"] {
+            background: white;
+            border-right: 2px solid var(--border);
+        }
+        
+        .sidebar-section-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        /* Metric Cards */
         .metric-card {
             background: white;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            transition: transform 0.2s;
+            border: 2px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 0.875rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-alt));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
         }
         
         .metric-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            transform: translateY(-8px);
+            border-color: var(--accent);
+            box-shadow: 0 20px 40px rgba(59, 130, 246, 0.15);
+        }
+        
+        .metric-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .metric-card h4 {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 0 0 0.75rem 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .metric-card p {
+            color: var(--primary);
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
         }
         
         /* Tab styling */
         .stTabs [data-baseweb="tab-list"] {
-            gap: 2rem;
-            background-color: #f1f5f9;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
+            gap: 0;
+            background-color: transparent;
+            padding: 0;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 2rem;
         }
         
         .stTabs [data-baseweb="tab"] {
-            border-radius: 0.5rem;
-            padding: 0.5rem 1rem;
-            font-weight: 500;
+            border-radius: 0;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+        
+        .stTabs [data-baseweb="tab"]:hover {
+            color: var(--accent);
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+        
+        .stTabs [aria-selected="true"] [data-baseweb="tab"] {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
         }
         
         /* Button styling */
         .stButton > button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--accent), var(--accent-alt));
             color: white;
             border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            transition: all 0.3s;
+            padding: 0.625rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.25);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stButton > button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: left 0.4s ease;
         }
         
         .stButton > button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.35);
+        }
+        
+        .stButton > button:hover::before {
+            left: 100%;
+        }
+        
+        /* Input and select styling */
+        .stMultiSelect > div > div {
+            border: 2px solid var(--border);
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+        }
+        
+        .stMultiSelect > div > div:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .stSlider > div > div {
+            padding: 1rem 0;
+        }
+        
+        /* Text input styling */
+        .stTextInput > div > div > input {
+            border: 2px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .stTextInput > div > div > input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            outline: none;
+        }
+        
+        /* Expander styling */
+        .streamlit-expanderHeader {
+            background-color: white;
+            border: 2px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .streamlit-expanderHeader:hover {
+            border-color: var(--accent);
+            background-color: rgba(59, 130, 246, 0.03);
+        }
+        
+        /* Divider styling */
+        hr {
+            border: none;
+            height: 2px;
+            background: var(--border);
+            margin: 2rem 0;
+        }
+        
+        /* Info/Warning boxes */
+        .stAlert {
+            border-radius: 0.875rem;
+            border-left: 4px solid;
+            padding: 1rem 1.25rem;
+        }
+        
+        .stAlert[data-baseweb="notification"] {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left-color: var(--accent);
+        }
+        
+        /* Data table styling */
+        .stDataFrame {
+            border: 2px solid var(--border);
+            border-radius: 0.875rem;
+            overflow: hidden;
+        }
+        
+        /* Progress bar */
+        .stProgress > div {
+            background: linear-gradient(90deg, var(--success), var(--accent));
+            border-radius: 1rem;
+            height: 8px;
+        }
+        
+        /* Markdown sections */
+        h1 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--primary);
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 1.5rem 0 0.5rem 0;
+        }
+        
+        h2 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--primary);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 1.25rem 0 0.75rem 0;
+        }
+        
+        h3 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--primary);
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 1rem 0 0.5rem 0;
+        }
+        
+        h4 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--primary);
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0.75rem 0 0.25rem 0;
+        }
+        
+        p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        
+        /* Footer styling */
+        .footer-text {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            padding: 2rem 1rem;
+            border-top: 2px solid var(--border);
+            background: white;
+            margin-top: 2rem;
+        }
+        
+        /* Filter summary cards grid */
+        .filter-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
         
         /* Responsive design */
         @media (max-width: 768px) {
-            .metric-card {
-                margin-bottom: 1rem;
+            .main {
+                padding: 0;
             }
+            
+            .header-container {
+                padding: 1.5rem 1rem;
+            }
+            
+            .header-title {
+                font-size: 1.75rem;
+            }
+            
+            .stTabs [data-baseweb="tab"] {
+                padding: 0.75rem 1rem;
+                font-size: 0.85rem;
+            }
+            
+            h1 { font-size: 1.5rem; }
+            h2 { font-size: 1.25rem; }
+            h3 { font-size: 1rem; }
         }
     </style>
     """, unsafe_allow_html=True)
@@ -139,7 +444,11 @@ def process_data(data):
 def create_enhanced_filters(data):
     """Generate enhanced interactive filters in sidebar"""
     with st.sidebar:
-        st.markdown("## 🔧 Navigation")
+        st.markdown("""
+        <div style='margin-bottom: 1.5rem;'>
+            <h2 style='margin: 0; color: #0f172a; font-size: 1.5rem;'>🔧 Navigation</h2>
+        </div>
+        """, unsafe_allow_html=True)
         
         # Quick stats in sidebar
         st.markdown("### 📊 Quick Stats")
@@ -240,22 +549,12 @@ def create_enhanced_filters(data):
 
 def display_enhanced_header():
     """Display enhanced dashboard header"""
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown("""
-        <div style='text-align: center;'>
-            <h1>🏭 Maintenance Operations Analytics Dashboard</h1>
-            <p style='color: #666;'>Real-time insights and analytics for maintenance operations</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with col3:
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
-        st.markdown(f"""
-        <div style='text-align: right;'>
-            <p style='color: #666; font-size: 0.875rem;'>Last Updated</p>
-            <p style='font-weight: bold;'>{current_time}</p>
-        </div>
-        """, unsafe_allow_html=True)
+    st.markdown("""
+    <div class='header-container'>
+        <h1 class='header-title'>🏭 Maintenance Operations Analytics</h1>
+        <p class='header-subtitle'>Real-time insights and analytics for maintenance operations</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 def display_filter_summary(filtered_data):
     """Show the selected filters summary with enhanced UI"""
@@ -267,7 +566,7 @@ def display_filter_summary(filtered_data):
         st.markdown(f"""
         <div class='metric-card'>
             <h4>🏭 Plants</h4>
-            <p><strong>{len(filtered_data['Plant'].unique()) if 'Plant' in filtered_data.columns else 0}</strong> selected</p>
+            <p>{len(filtered_data['Plant'].unique()) if 'Plant' in filtered_data.columns else 0} selected</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -275,15 +574,15 @@ def display_filter_summary(filtered_data):
         st.markdown(f"""
         <div class='metric-card'>
             <h4>📆 Time Period</h4>
-            <p><strong>{filtered_data['Year'].min() if 'Year' in filtered_data.columns else 'N/A'} - {filtered_data['Year'].max() if 'Year' in filtered_data.columns else 'N/A'}</strong></p>
+            <p>{filtered_data['Year'].min() if 'Year' in filtered_data.columns else 'N/A'} - {filtered_data['Year'].max() if 'Year' in filtered_data.columns else 'N/A'}</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col3:
         st.markdown(f"""
         <div class='metric-card'>
-            <h4>✅ Status</h4>
-            <p><strong>{len(filtered_data['Order Status'].unique())}</strong> statuses</p>
+            <h4>✅ Status Types</h4>
+            <p>{len(filtered_data['Order Status'].unique())} statuses</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -292,7 +591,7 @@ def display_filter_summary(filtered_data):
         st.markdown(f"""
         <div class='metric-card'>
             <h4>📊 Total Records</h4>
-            <p><strong>{total_orders:,}</strong> orders</p>
+            <p>{total_orders:,} orders</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -901,7 +1200,7 @@ def main():
     # Footer
     st.divider()
     st.markdown("""
-    <div style='text-align: center; color: #666; padding: 1rem;'>
+    <div class='footer-text'>
         <p>🔧 Maintenance Analytics Dashboard | Built with Streamlit | Data updates in real-time</p>
     </div>
     """, unsafe_allow_html=True)
